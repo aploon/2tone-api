@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
 
 class ListingSeeder extends Seeder
 {
-    private const PROPERTY_TYPES = [
+    private const TYPES = [
         'Villa', 'Maison', 'Appartement', 'Duplex/Triplex',
         'Immeuble', 'Studio', 'Bureau', 'Terrain',
     ];
@@ -39,7 +39,7 @@ class ListingSeeder extends Seeder
                 'neighborhood_id' => $neighborhoods->random()->id,
                 'title' => fake()->sentence(4),
                 'description' => fake()->optional(0.9)->paragraphs(2, true),
-                'property_type' => fake()->randomElement(self::PROPERTY_TYPES),
+                'type' => fake()->randomElement(self::TYPES),
                 'price' => fake()->numberBetween(50_000, 1_500_000),
                 'publication_status' => fake()->randomElement([
                     Listing::STATUS_DRAFT,

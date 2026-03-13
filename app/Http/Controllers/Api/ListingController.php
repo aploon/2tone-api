@@ -19,8 +19,8 @@ class ListingController extends Controller
             $query->where('neighborhood_id', $request->neighborhood_id);
         }
 
-        if ($request->filled('property_type')) {
-            $query->where('property_type', $request->property_type);
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
         }
 
         if ($request->filled('min_price')) {

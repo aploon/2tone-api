@@ -30,7 +30,7 @@ class Listing extends Model
         'neighborhood_id',
         'title',
         'description',
-        'property_type',
+        'type',
         'price',
         'publication_status',
         'bedrooms',
@@ -62,7 +62,7 @@ class Listing extends Model
 
     public function media(): HasMany
     {
-        return $this->hasMany(PropertyMedia::class, 'listing_id')->orderBy('sort_order');
+        return $this->hasMany(Media::class, 'listing_id')->orderBy('sort_order');
     }
 
     public function payment(): HasOne

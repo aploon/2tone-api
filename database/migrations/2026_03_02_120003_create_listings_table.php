@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('neighborhood_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->enum('property_type', [
+            $table->enum('type', [
                 'Villa',
                 'Maison',
                 'Appartement',
