@@ -6,25 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Vues / consultations d'annonces (stats pour propriétaire).
-     */
     public function up(): void
     {
-        Schema::create('vues', function (Blueprint $table) {
+        Schema::create('listing_views', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('annonce_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('utilisateur_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('listing_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->string('ip', 45)->nullable();
-            $table->timestamp('date_vue')->useCurrent();
+            $table->timestamp('viewed_at')->useCurrent();
             $table->timestamps();
 
-            $table->index(['annonce_id', 'date_vue']);
+            $table->index(['listing_id', 'viewed_at']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('vues');
+        Schema::dropIfExists('listing_views');
     }
 };

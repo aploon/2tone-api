@@ -6,25 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Codes OTP pour inscription / connexion par SMS.
-     */
     public function up(): void
     {
-        Schema::create('otps', function (Blueprint $table) {
+        Schema::create('otp_codes', function (Blueprint $table) {
             $table->id();
             $table->string('telephone', 20);
             $table->string('code', 10);
-            $table->timestamp('expiration');
-            $table->boolean('valide')->default(true);
+            $table->timestamp('expires_at');
+            $table->boolean('is_valid')->default(true);
             $table->timestamps();
 
-            $table->index(['telephone', 'valide', 'expiration']);
+            $table->index(['telephone', 'is_valid', 'expires_at']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('otps');
+        Schema::dropIfExists('otp_codes');
     }
 };

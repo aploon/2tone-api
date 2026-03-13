@@ -11,25 +11,23 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    public const ROLE_LOCATAIRE = 'locataire';
-    public const ROLE_PROPRIETAIRE = 'proprietaire';
+    public const ROLE_TENANT = 'tenant';
+    public const ROLE_OWNER = 'owner';
     public const ROLE_ADMIN = 'admin';
 
-    public const STATUT_ACTIF = 'actif';
-    public const STATUT_SUSPENDU = 'suspendu';
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_SUSPENDED = 'suspended';
 
     protected $fillable = [
         'name',
         'email',
         'password',
         'telephone',
-        'numero_whatsapp',
-        'nom',
+        'whatsapp_number',
         'role',
-        'statut',
+        'status',
     ];
 
     protected $hidden = [
@@ -45,30 +43,30 @@ class User extends Authenticatable
         ];
     }
 
-    public function annonces(): HasMany
+    public function listings(): HasMany
     {
-        return $this->hasMany(Annonce::class, 'proprietaire_id');
+        return $this->hasMany(Listing::class, 'owner_id');
     }
 
-    public function favoris(): BelongsToMany
+    public function favorites(): BelongsToMany
     {
-        return $this->belongsToMany(Annonce::class, 'favoris', 'utilisateur_id', 'annonce_id')
+        return $this->belongsToMany(Listing::class, 'favorites', 'user_id', 'listing_id')
             ->withTimestamps();
     }
 
-    public function vues(): HasMany
+    public function listingViews(): HasMany
     {
-        return $this->hasMany(Vue::class, 'utilisateur_id');
+        return $this->hasMany(ListingView::class);
     }
 
-    public function contacts(): HasMany
+    public function inquiries(): HasMany
     {
-        return $this->hasMany(Contact::class, 'utilisateur_id');
+        return $this->hasMany(Inquiry::class);
     }
 
-    public function isProprietaire(): bool
+    public function isOwner(): bool
     {
-        return $this->role === self::ROLE_PROPRIETAIRE || $this->role === self::ROLE_ADMIN;
+        return $this->role === self::ROLE_OWNER || $this->role === self::ROLE_ADMIN;
     }
 
     public function isAdmin(): bool

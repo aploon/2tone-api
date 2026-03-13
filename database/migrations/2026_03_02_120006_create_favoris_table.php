@@ -6,23 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Favoris : relation N-N utilisateur <-> annonces.
-     */
     public function up(): void
     {
-        Schema::create('favoris', function (Blueprint $table) {
+        Schema::create('favorites', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('utilisateur_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('annonce_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('listing_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['utilisateur_id', 'annonce_id']);
+            $table->unique(['user_id', 'listing_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('favoris');
+        Schema::dropIfExists('favorites');
     }
 };

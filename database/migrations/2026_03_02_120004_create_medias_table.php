@@ -6,27 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Médias par annonce : images + vidéo 3D (obligatoire).
-     */
     public function up(): void
     {
-        Schema::create('medias', function (Blueprint $table) {
+        Schema::create('property_media', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('annonce_id')->constrained()->cascadeOnDelete();
-            $table->string('type', 20); // image | video_3d
+            $table->foreignId('listing_id')->constrained()->cascadeOnDelete();
+            $table->string('type', 20);
             $table->string('url');
-            $table->unsignedInteger('poids')->nullable(); // taille en octets
-            $table->boolean('main')->default(false); // image principale
-            $table->unsignedSmallInteger('ordre')->default(0);
+            $table->unsignedInteger('size_bytes')->nullable();
+            $table->boolean('is_primary')->default(false);
+            $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
 
-            $table->index(['annonce_id', 'type', 'ordre']);
+            $table->index(['listing_id', 'type', 'sort_order']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('medias');
+        Schema::dropIfExists('property_media');
     }
 };

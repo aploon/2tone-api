@@ -6,25 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Messages de contact locataire -> propriétaire (via annonce).
-     */
     public function up(): void
     {
-        Schema::create('contacts', function (Blueprint $table) {
+        Schema::create('inquiries', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('annonce_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('utilisateur_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('listing_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->text('message')->nullable();
-            $table->timestamp('date')->useCurrent();
+            $table->timestamp('contacted_at')->useCurrent();
             $table->timestamps();
 
-            $table->index(['annonce_id', 'date']);
+            $table->index(['listing_id', 'contacted_at']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('contacts');
+        Schema::dropIfExists('inquiries');
     }
 };

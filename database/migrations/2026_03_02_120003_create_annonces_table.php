@@ -6,18 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Annonces immobilières. Visible uniquement si payée (contrainte métier).
-     */
     public function up(): void
     {
-        Schema::create('annonces', function (Blueprint $table) {
+        Schema::create('listings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('proprietaire_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('quartier_id')->constrained()->cascadeOnDelete();
-            $table->string('titre');
+            $table->foreignId('owner_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('neighborhood_id')->constrained()->cascadeOnDelete();
+            $table->string('title');
             $table->text('description')->nullable();
-            $table->enum('type_bien', [
+            $table->enum('property_type', [
                 'Villa',
                 'Maison',
                 'Appartement',
@@ -27,22 +24,22 @@ return new class extends Migration
                 'Bureau',
                 'Terrain',
             ]);
-            $table->unsignedInteger('prix'); // en FCFA (XOF)
-            $table->string('statut_publication', 30)->default('brouillon'); // brouillon | en_attente | payee | publiee | rejetee
-            $table->unsignedTinyInteger('chambres')->default(0);
-            $table->unsignedTinyInteger('salles_de_bain')->default(0);
-            $table->unsignedInteger('surface_m2')->nullable();
+            $table->unsignedInteger('price');
+            $table->string('publication_status', 30)->default('draft');
+            $table->unsignedTinyInteger('bedrooms')->default(0);
+            $table->unsignedTinyInteger('bathrooms')->default(0);
+            $table->unsignedInteger('surface_sqm')->nullable();
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
             $table->timestamps();
 
-            $table->index(['statut_publication', 'created_at']);
-            $table->index('quartier_id');
+            $table->index(['publication_status', 'created_at']);
+            $table->index('neighborhood_id');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('annonces');
+        Schema::dropIfExists('listings');
     }
 };

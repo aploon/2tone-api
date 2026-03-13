@@ -6,27 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Paiement lié à une annonce (publication). Annonce visible seulement si payée.
-     */
     public function up(): void
     {
-        Schema::create('paiements', function (Blueprint $table) {
+        Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('annonce_id')->constrained()->cascadeOnDelete();
-            $table->decimal('montant', 12, 2);
-            $table->string('statut', 30)->default('en_attente'); // en_attente | valide | echoue | rembourse
-            $table->string('methode', 50)->nullable(); // orange_money | mtn_money | wave | etc.
+            $table->foreignId('listing_id')->constrained()->cascadeOnDelete();
+            $table->decimal('amount', 12, 2);
+            $table->string('status', 30)->default('pending');
+            $table->string('method', 50)->nullable();
             $table->string('reference', 100)->nullable()->unique();
-            $table->timestamp('date_paiement')->nullable();
+            $table->timestamp('paid_at')->nullable();
             $table->timestamps();
 
-            $table->index(['annonce_id', 'statut']);
+            $table->index(['listing_id', 'status']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('paiements');
+        Schema::dropIfExists('payments');
     }
 };
