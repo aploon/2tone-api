@@ -19,6 +19,12 @@ class ListingController extends Controller
             $query->where('neighborhood_id', $request->neighborhood_id);
         }
 
+        if ($request->filled('city_id')) {
+            $query->whereHas('neighborhood', function ($nq) use ($request) {
+                $nq->where('city_id', $request->city_id);
+            });
+        }
+
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
