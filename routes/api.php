@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\ListingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -10,3 +11,6 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/listings', [ListingController::class, 'index']);
 Route::get('/listings/{id}', [ListingController::class, 'show']);
+
+Route::get('/cities', [CityController::class, 'index']);
+Route::get('/cities/{city}/neighborhoods', [CityController::class, 'neighborhoods']);
