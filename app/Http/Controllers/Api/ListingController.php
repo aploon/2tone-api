@@ -70,4 +70,9 @@ class ListingController extends Controller
 
         return response()->json($listing);
     }
+
+    public function getTypes(): JsonResponse
+    {
+        return response()->json(Listing::getTypes());
+    }
 }

@@ -10,8 +10,8 @@ use Illuminate\Database\Seeder;
 class ListingSeeder extends Seeder
 {
     private const TYPES = [
-        'Villa', 'Maison', 'Appartement', 'Duplex/Triplex',
-        'Immeuble', 'Studio', 'Bureau', 'Terrain',
+        'villa', 'house', 'apartment', 'duplex_triplex',
+        'building', 'studio', 'office', 'land',
     ];
 
     public function run(): void

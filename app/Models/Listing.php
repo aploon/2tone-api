@@ -10,14 +10,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Listing extends Model
 {
-    public const TYPE_VILLA = 'Villa';
-    public const TYPE_MAISON = 'Maison';
-    public const TYPE_APPARTEMENT = 'Appartement';
-    public const TYPE_DUPLEX_TRIPLEX = 'Duplex/Triplex';
-    public const TYPE_IMMEUBLE = 'Immeuble';
-    public const TYPE_STUDIO = 'Studio';
-    public const TYPE_BUREAU = 'Bureau';
-    public const TYPE_TERRAIN = 'Terrain';
+    public const TYPE_VILLA = 'villa';
+    public const TYPE_HOUSE = 'house';
+    public const TYPE_APARTMENT = 'apartment';
+    public const TYPE_DUPLEX_TRIPLEX = 'duplex_triplex';
+    public const TYPE_BUILDING = 'building';
+    public const TYPE_STUDIO = 'studio';
+    public const TYPE_OFFICE = 'office';
+    public const TYPE_LAND = 'land';
 
     public const STATUS_DRAFT = 'draft';
     public const STATUS_PENDING = 'pending';
@@ -47,6 +47,20 @@ class Listing extends Model
             'bedrooms' => 'integer',
             'bathrooms' => 'integer',
             'surface_sqm' => 'integer',
+        ];
+    }
+
+    public static function getTypes(): array
+    {
+        return [
+            self::TYPE_VILLA,
+            self::TYPE_HOUSE,
+            self::TYPE_APARTMENT,
+            self::TYPE_DUPLEX_TRIPLEX,
+            self::TYPE_BUILDING,
+            self::TYPE_STUDIO,
+            self::TYPE_OFFICE,
+            self::TYPE_LAND,
         ];
     }
 

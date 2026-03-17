@@ -15,14 +15,14 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('type', [
-                'Villa',
-                'Maison',
-                'Appartement',
-                'Duplex/Triplex',
-                'Immeuble',
-                'Studio',
-                'Bureau',
-                'Terrain',
+                'villa',
+                'house',
+                'apartment',
+                'duplex_triplex',
+                'building',
+                'studio',
+                'office',
+                'land',
             ]);
             $table->unsignedInteger('price');
             $table->string('publication_status', 30)->default('draft');
