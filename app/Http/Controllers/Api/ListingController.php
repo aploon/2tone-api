@@ -12,7 +12,7 @@ class ListingController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Listing::query()
-            ->with(['neighborhood', 'media', 'owner:id,name,telephone,whatsapp_number'])
+            ->with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number'])
             ->visible();
 
         if ($request->filled('neighborhood_id')) {
@@ -36,21 +36,25 @@ class ListingController extends Controller
             $query->where(function ($q) use ($term) {
                 $q->where('title', 'like', $term)
                     ->orWhereHas('neighborhood', function ($nq) use ($term) {
-                        $nq->where('name', 'like', $term)->orWhere('city', 'like', $term);
+                        $nq->where('name', 'like', $term)
+                            ->orWhereHas('city', function ($cq) use ($term) {
+                                $cq->where('name', 'like', $term);
+                            });
                     });
             });
         }
 
-        $listings = $query->orderByDesc('created_at')->paginate(
-            $request->integer('per_page', 15)
-        );
+        $listings = $query
+            ->where('publication_status', Listing::STATUS_PUBLISHED)
+            ->orderByDesc('created_at')
+            ->paginate($request->integer('per_page', 15));
 
         return response()->json($listings);
     }
 
     public function show(int $id): JsonResponse
     {
-        $listing = Listing::with(['neighborhood', 'media', 'owner:id,name,telephone,whatsapp_number'])
+        $listing = Listing::with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number'])
             ->visible()
             ->find($id);
 
