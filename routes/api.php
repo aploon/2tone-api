@@ -23,8 +23,8 @@ Route::get('/user', function (Request $request) {
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::get('/listings', [ListingController::class, 'index']);
-Route::get('/listings/{id}', [ListingController::class, 'show']);
 Route::get('/listings/types', [ListingController::class, 'getTypes']);
+Route::get('/listings/{id}', [ListingController::class, 'show']);
 
 Route::get('/cities', [CityController::class, 'index']);
 Route::get('/cities/{city}/neighborhoods', [CityController::class, 'neighborhoods']);
