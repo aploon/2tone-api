@@ -31,6 +31,16 @@ class ListingController extends Controller
             $query->where('price', '<=', (int) $request->max_price);
         }
 
+        if ($request->filled('q')) {
+            $term = '%'.trim($request->q).'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('title', 'like', $term)
+                    ->orWhereHas('neighborhood', function ($nq) use ($term) {
+                        $nq->where('name', 'like', $term)->orWhere('city', 'like', $term);
+                    });
+            });
+        }
+
         $listings = $query->orderByDesc('created_at')->paginate(
             $request->integer('per_page', 15)
         );
