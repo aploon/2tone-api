@@ -81,10 +81,7 @@ class NeighborhoodSeeder extends Seeder
         ];
 
         foreach ($names as $name) {
-            Neighborhood::firstOrCreate(
-                ['name' => $name, 'city_id' => $city->id],
-                ['name' => $name, 'city_id' => $city->id]
-            );
+            Neighborhood::firstOrCreate(['name' => $name, 'city_id' => $city->id]);
         }
     }
 }
