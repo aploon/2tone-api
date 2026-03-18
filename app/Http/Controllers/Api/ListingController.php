@@ -13,7 +13,8 @@ class ListingController extends Controller
     {
         $query = Listing::query()
             ->with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number'])
-            ->visible();
+            ->visible()
+            ->where('publication_status', Listing::STATUS_PUBLISHED);
 
         if ($request->filled('neighborhood_id')) {
             $query->where('neighborhood_id', $request->neighborhood_id);
@@ -38,20 +39,50 @@ class ListingController extends Controller
         }
 
         if ($request->filled('q')) {
-            $term = '%'.trim($request->q).'%';
-            $query->where(function ($q) use ($term) {
-                $q->where('title', 'like', $term)
-                    ->orWhereHas('neighborhood', function ($nq) use ($term) {
-                        $nq->where('name', 'like', $term)
-                            ->orWhereHas('city', function ($cq) use ($term) {
-                                $cq->where('name', 'like', $term);
-                            });
-                    });
-            });
+            $terms = array_values(array_filter(preg_split('/\s+/', trim((string) $request->q))));
+
+            if (! empty($terms)) {
+                $scoreParts = [];
+                $scoreBindings = [];
+
+                foreach ($terms as $word) {
+                    $term = '%'.$word.'%';
+                    $scoreParts[] = "(CASE WHEN (
+                        listings.title LIKE ?
+                        OR EXISTS (
+                            SELECT 1
+                            FROM neighborhoods n
+                            LEFT JOIN cities c ON c.id = n.city_id
+                            WHERE n.id = listings.neighborhood_id
+                              AND (n.name LIKE ? OR c.name LIKE ?)
+                        )
+                    ) THEN 1 ELSE 0 END)";
+
+                    $scoreBindings[] = $term;
+                    $scoreBindings[] = $term;
+                    $scoreBindings[] = $term;
+                }
+
+                $scoreExpression = implode(' + ', $scoreParts);
+
+                $scoredQuery = (clone $query)
+                    ->select('listings.*')
+                    ->selectRaw("({$scoreExpression}) as q_match_score", $scoreBindings);
+
+                $topScore = (int) ((clone $scoredQuery)->orderByDesc('q_match_score')->limit(1)->value('q_match_score') ?? 0);
+
+                if ($topScore > 0) {
+                    $query
+                        ->select('listings.*')
+                        ->selectRaw("({$scoreExpression}) as q_match_score", $scoreBindings)
+                        ->whereRaw("({$scoreExpression}) = ?", array_merge($scoreBindings, [$topScore]));
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
+            }
         }
 
         $listings = $query
-            ->where('publication_status', Listing::STATUS_PUBLISHED)
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 15));
 
