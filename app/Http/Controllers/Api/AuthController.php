@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -32,12 +33,7 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'token_type' => 'Bearer',
-            'user' => [
-                'id' => (string) $user->id,
-                'email' => $user->email,
-                'name' => $user->name,
-                'role' => $user->role,
-            ],
+            'user' => $this->formatUser($user),
         ]);
     }
 
@@ -62,13 +58,28 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'token_type' => 'Bearer',
-            'user' => [
-                'id' => (string) $user->id,
-                'email' => $user->email,
-                'name' => $user->name,
-                'role' => $user->role,
-            ],
+            'user' => $this->formatUser($user),
         ], 201);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'telephone' => ['nullable', 'string', 'max:30'],
+            'whatsapp_number' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $user->update($validated);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $this->formatUser($user->fresh()),
+        ]);
     }
 
     public function logout(Request $request): JsonResponse
@@ -76,5 +87,17 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out']);
+    }
+
+    private function formatUser(User $user): array
+    {
+        return [
+            'id' => (string) $user->id,
+            'email' => $user->email,
+            'name' => $user->name,
+            'role' => $user->role,
+            'telephone' => $user->telephone,
+            'whatsapp_number' => $user->whatsapp_number,
+        ];
     }
 }

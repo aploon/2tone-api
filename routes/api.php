@@ -17,10 +17,13 @@ Route::get('/user', function (Request $request) {
         'email' => $user->email,
         'name' => $user->name,
         'role' => $user->role,
+        'telephone' => $user->telephone,
+        'whatsapp_number' => $user->whatsapp_number,
     ]);
 })->middleware('auth:sanctum');
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::put('/user', [AuthController::class, 'updateProfile'])->middleware('auth:sanctum');
 
 Route::get('/listings', [ListingController::class, 'index']);
 Route::get('/listings/types', [ListingController::class, 'getTypes']);
