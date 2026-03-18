@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Listing;
+use App\Models\Media;
 use App\Models\Neighborhood;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -10,9 +11,28 @@ use Illuminate\Database\Seeder;
 class ListingSeeder extends Seeder
 {
     private const TYPES = [
-        'villa', 'house', 'apartment', 'duplex_triplex',
-        'building', 'studio', 'office', 'land',
+        Listing::TYPE_VILLA,
+        Listing::TYPE_APARTMENT,
+        Listing::TYPE_STUDIO,
+        Listing::TYPE_HOUSE,
+        Listing::TYPE_DUPLEX_TRIPLEX,
+        Listing::TYPE_BUILDING,
     ];
+
+    /** Sample image URLs (Unsplash / Pexels) for listing galleries. */
+    private const SAMPLE_IMAGES = [
+        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
+        'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
+        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800',
+        'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800',
+        'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?w=800',
+        'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?w=800',
+        'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?w=800',
+    ];
+
+    /** Sample 360 / 3D tour video URL (Matterport-style or YouTube 360). */
+    private const SAMPLE_VIDEO_3D = 'https://www.youtube.com/embed/dQw4w9WgXcQ';
 
     public function run(): void
     {
@@ -34,7 +54,7 @@ class ListingSeeder extends Seeder
         $toCreate = 30 - $count;
 
         for ($i = 0; $i < $toCreate; $i++) {
-            Listing::create([
+            $listing = Listing::create([
                 'owner_id' => $owners->random()->id,
                 'neighborhood_id' => $neighborhoods->random()->id,
                 'title' => fake()->sentence(4),
@@ -52,6 +72,34 @@ class ListingSeeder extends Seeder
                 'surface_sqm' => fake()->optional(0.8)->numberBetween(25, 400),
                 'latitude' => fake()->optional(0.7)->latitude(12.5, 12.7),
                 'longitude' => fake()->optional(0.7)->longitude(-8.1, -7.9),
+            ]);
+
+            $this->attachMediaToListing($listing);
+        }
+
+        Listing::whereDoesntHave('media')->each(fn (Listing $l) => $this->attachMediaToListing($l));
+    }
+
+    private function attachMediaToListing(Listing $listing): void
+    {
+        $imageUrls = fake()->randomElements(self::SAMPLE_IMAGES, fake()->numberBetween(2, 5));
+        $sortOrder = 0;
+        foreach ($imageUrls as $index => $url) {
+            Media::create([
+                'listing_id' => $listing->id,
+                'type' => Media::TYPE_IMAGE,
+                'url' => $url,
+                'is_primary' => $index === 0,
+                'sort_order' => $sortOrder++,
+            ]);
+        }
+        if (fake()->boolean(35)) {
+            Media::create([
+                'listing_id' => $listing->id,
+                'type' => Media::TYPE_VIDEO_3D,
+                'url' => self::SAMPLE_VIDEO_3D,
+                'is_primary' => false,
+                'sort_order' => $sortOrder++,
             ]);
         }
     }
