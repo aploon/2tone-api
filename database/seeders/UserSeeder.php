@@ -11,11 +11,31 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate(
-            ['email' => 'arnaudadjovi274@gmail.com'],
+            ['email' => 'tenant@example.com'],
             [
-                'name' => 'Arnaud Adjovi',
+                'name' => 'Tenant',
                 'password' => Hash::make('password'),
                 'role' => User::ROLE_TENANT,
+                'status' => User::STATUS_ACTIVE,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'arnaudadjovi274@gmail.com'],
+            [
+                'name' => 'Owner',
+                'password' => Hash::make('password'),
+                'role' => User::ROLE_OWNER,
+                'status' => User::STATUS_ACTIVE,
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('password'),
+                'role' => User::ROLE_ADMIN,
                 'status' => User::STATUS_ACTIVE,
             ]
         );
