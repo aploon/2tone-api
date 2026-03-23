@@ -31,8 +31,17 @@ class ListingSeeder extends Seeder
         'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?w=800',
     ];
 
-    /** Sample 360 / 3D tour video URL (Matterport-style or YouTube 360). */
-    private const SAMPLE_VIDEO_3D = 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+    /** Sample 3D resources used by the mobile viewer tests. */
+    private const SAMPLE_3D_RESOURCES = [
+        [
+            'type' => Media::TYPE_PANORAMA_3D,
+            'url' => 'https://raw.githubusercontent.com/aploon/aploon/main/assets/1.jpg',
+        ],
+        [
+            'type' => Media::TYPE_MODEL_3D,
+            'url' => 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Duck/glTF-Binary/Duck.glb',
+        ],
+    ];
 
     public function run(): void
     {
@@ -103,10 +112,11 @@ class ListingSeeder extends Seeder
                 'sort_order' => $sortOrder++,
             ]);
         }
+        $resource3d = fake()->randomElement(self::SAMPLE_3D_RESOURCES);
         Media::create([
             'listing_id' => $listing->id,
-            'type' => Media::TYPE_VIDEO_3D,
-            'url' => self::SAMPLE_VIDEO_3D,
+            'type' => $resource3d['type'],
+            'url' => $resource3d['url'],
             'is_primary' => false,
             'sort_order' => $sortOrder++,
         ]);

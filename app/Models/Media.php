@@ -9,6 +9,8 @@ class Media extends Model
 {
     public const TYPE_IMAGE = 'image';
     public const TYPE_VIDEO_3D = 'video_3d';
+    public const TYPE_MODEL_3D = 'model_3d';
+    public const TYPE_PANORAMA_3D = 'panorama_3d';
 
     protected $fillable = ['listing_id', 'type', 'url', 'title', 'description', 'size_bytes', 'is_primary', 'sort_order'];
 
