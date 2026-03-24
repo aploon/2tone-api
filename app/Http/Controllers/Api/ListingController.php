@@ -26,6 +26,10 @@ class ListingController extends Controller
             });
         }
 
+        if ($request->filled('owner_id')) {
+            $query->where('owner_id', $request->owner_id);
+        }
+
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
