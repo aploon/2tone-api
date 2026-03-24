@@ -12,6 +12,7 @@ Route::post('/register', [AuthController::class, 'register']);
 
 Route::get('/user', function (Request $request) {
     $user = $request->user();
+
     return response()->json([
         'id' => (string) $user->id,
         'email' => $user->email,
@@ -33,6 +34,8 @@ Route::get('/cities', [CityController::class, 'index']);
 Route::get('/cities/{city}/neighborhoods', [CityController::class, 'neighborhoods']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/listings', [ListingController::class, 'store']);
+    Route::post('/listings/media', [ListingController::class, 'uploadMedia']);
     Route::get('/favorites', [FavoriteController::class, 'index']);
     Route::post('/favorites', [FavoriteController::class, 'store']);
     Route::delete('/favorites/{listingId}', [FavoriteController::class, 'destroy']);
