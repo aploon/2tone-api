@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\BillingPeriod;
 use App\Models\Listing;
 use App\Models\Media;
 use Illuminate\Foundation\Http\FormRequest;
@@ -27,6 +28,7 @@ class StoreListingRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'type' => ['required', 'string', Rule::in(Listing::getTypes())],
             'price' => ['required', 'integer', 'min:0'],
+            'billing_period' => ['required', Rule::enum(BillingPeriod::class)],
             'neighborhood_id' => ['required', 'integer', 'exists:neighborhoods,id'],
             'bedrooms' => ['sometimes', 'integer', 'min:0', 'max:255'],
             'bathrooms' => ['sometimes', 'integer', 'min:0', 'max:255'],

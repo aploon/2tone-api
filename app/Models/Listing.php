@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BillingPeriod;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,18 +12,29 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Listing extends Model
 {
     public const TYPE_VILLA = 'villa';
+
     public const TYPE_HOUSE = 'house';
+
     public const TYPE_APARTMENT = 'apartment';
+
     public const TYPE_DUPLEX_TRIPLEX = 'duplex_triplex';
+
     public const TYPE_BUILDING = 'building';
+
     public const TYPE_STUDIO = 'studio';
+
     public const TYPE_OFFICE = 'office';
+
     public const TYPE_LAND = 'land';
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_PAID = 'paid';
+
     public const STATUS_PUBLISHED = 'published';
+
     public const STATUS_REJECTED = 'rejected';
 
     protected $fillable = [
@@ -32,6 +44,7 @@ class Listing extends Model
         'description',
         'type',
         'price',
+        'billing_period',
         'publication_status',
         'bedrooms',
         'bathrooms',
@@ -44,6 +57,7 @@ class Listing extends Model
     {
         return [
             'price' => 'integer',
+            'billing_period' => BillingPeriod::class,
             'bedrooms' => 'integer',
             'bathrooms' => 'integer',
             'surface_sqm' => 'integer',

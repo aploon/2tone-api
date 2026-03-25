@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\BillingPeriod;
 use App\Models\Listing;
 use App\Models\Media;
 use App\Models\Neighborhood;
@@ -70,6 +71,7 @@ class ListingSeeder extends Seeder
                 'description' => fake()->optional(0.9)->paragraphs(2, true),
                 'type' => fake()->randomElement(self::TYPES),
                 'price' => fake()->numberBetween(50_000, 1_500_000),
+                'billing_period' => fake()->randomElement(BillingPeriod::cases())->value,
                 'publication_status' => fake()->randomElement([
                     Listing::STATUS_DRAFT,
                     Listing::STATUS_PENDING,
@@ -136,8 +138,8 @@ class ListingSeeder extends Seeder
 
         foreach (User::where('role', User::ROLE_OWNER)->get() as $index => $user) {
             $user->update([
-                'telephone' => '+2237' . str_pad((string) ($index + 1), 7, '0', STR_PAD_LEFT),
-                'whatsapp_number' => '+2237' . str_pad((string) ($index + 1), 7, '0', STR_PAD_LEFT),
+                'telephone' => '+2237'.str_pad((string) ($index + 1), 7, '0', STR_PAD_LEFT),
+                'whatsapp_number' => '+2237'.str_pad((string) ($index + 1), 7, '0', STR_PAD_LEFT),
             ]);
         }
     }

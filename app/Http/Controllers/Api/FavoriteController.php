@@ -74,6 +74,7 @@ class FavoriteController extends Controller
             'id' => (string) $listing->id,
             'title' => $listing->title,
             'price' => $listing->price,
+            'billing_period' => $listing->billing_period?->value ?? 'per_month',
             'currency' => 'FCFA',
             'location' => $location,
             'bedrooms' => $listing->bedrooms,
