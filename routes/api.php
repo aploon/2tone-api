@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
+use App\Http\Controllers\Api\GeocodingController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\ListingController;
 use Illuminate\Http\Request;
@@ -32,6 +33,9 @@ Route::get('/listings/{id}', [ListingController::class, 'show']);
 
 Route::get('/cities', [CityController::class, 'index']);
 Route::get('/cities/{city}/neighborhoods', [CityController::class, 'neighborhoods']);
+
+Route::get('/geocode', [GeocodingController::class, 'search']);
+Route::get('/geocode/search', [GeocodingController::class, 'searchSuggestions']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/listings', [ListingController::class, 'store']);
