@@ -186,7 +186,10 @@ class ListingController extends Controller
 
     /**
      * Upload d’un fichier média pour une future annonce.
-     * Le type Media (image, video_3d, model_3d) est déduit du MIME / extension.
+     * Le comportement dépend d’un champ optionnel `target` envoyé par l’app :
+     * - `images` : n’accepte que les images (max 10 Mo), stockées dans `listings/photos/...`
+     * - `video_3d` : accepte tout type de fichier (max 50 Mo), stocké dans `listings/video-3d/...`
+     *   sauf `glb/gltf` qui deviennent `model_3d` stockés dans `listings/models-3d/...`
      */
     public function uploadMedia(Request $request): JsonResponse
     {
@@ -199,6 +202,7 @@ class ListingController extends Controller
 
         $request->validate([
             'file' => ['required', 'file'],
+            'target' => ['sometimes', 'string', 'in:images,video_3d'],
         ]);
 
         $file = $request->file('file');
@@ -206,35 +210,62 @@ class ListingController extends Controller
         $extension = strtolower((string) $file->getClientOriginalExtension());
         $sizeKb = (int) ceil($file->getSize() / 1024);
 
+        $target = $request->get('target');
+
         $subDir = date('Y/m');
         $mediaType = null;
 
-        if (str_starts_with($mime, 'image/')) {
+        // 1) Comportement explicite par target (recommandé, cohérent avec l’UI).
+        if ($target === 'images') {
+            if (!str_starts_with($mime, 'image/')) {
+                return response()->json(['message' => 'Le fichier doit être une image.'], 422);
+            }
             if ($sizeKb > 10240) {
                 return response()->json(['message' => 'Image trop lourde (max. 10 Mo).'], 422);
             }
             $mediaType = Media::TYPE_IMAGE;
             $path = $file->store("listings/photos/{$subDir}", 'public');
-        } elseif (str_starts_with($mime, 'video/')) {
-            if ($sizeKb > 51200) {
-                return response()->json(['message' => 'Vidéo trop lourde (max. 50 Mo).'], 422);
-            }
-            $mediaType = Media::TYPE_VIDEO_3D;
-            $path = $file->store("listings/video-3d/{$subDir}", 'public');
-        } elseif (in_array($extension, ['glb', 'gltf'], true)) {
-            if ($sizeKb > 51200) {
-                return response()->json(['message' => 'Fichier 3D trop lourd (max. 50 Mo).'], 422);
-            }
-            $mediaType = Media::TYPE_MODEL_3D;
-            $path = $file->store("listings/models-3d/{$subDir}", 'public');
-        } else {
-            // Pour la section "Visite 3D / vidéo" côté app, on veut accepter aussi des types inattendus.
-            // Par défaut, on stocke en tant que vidéo_3d (même si la restitution dépendra du fichier).
+        } elseif ($target === 'video_3d') {
             if ($sizeKb > 51200) {
                 return response()->json(['message' => 'Fichier trop lourd (max. 50 Mo).'], 422);
             }
-            $mediaType = Media::TYPE_VIDEO_3D;
-            $path = $file->store("listings/video-3d/{$subDir}", 'public');
+
+            // Modèle 3D : glb/gltf => model_3d.
+            if (in_array($extension, ['glb', 'gltf'], true)) {
+                $mediaType = Media::TYPE_MODEL_3D;
+                $path = $file->store("listings/models-3d/{$subDir}", 'public');
+            } else {
+                // Tout le reste => video_3d (même si MIME = image/, etc.).
+                $mediaType = Media::TYPE_VIDEO_3D;
+                $path = $file->store("listings/video-3d/{$subDir}", 'public');
+            }
+        } else {
+            // 2) Rétro-compatibilité : comportement historique quand `target` n’est pas fourni.
+            if (str_starts_with($mime, 'image/')) {
+                if ($sizeKb > 10240) {
+                    return response()->json(['message' => 'Image trop lourde (max. 10 Mo).'], 422);
+                }
+                $mediaType = Media::TYPE_IMAGE;
+                $path = $file->store("listings/photos/{$subDir}", 'public');
+            } elseif (str_starts_with($mime, 'video/')) {
+                if ($sizeKb > 51200) {
+                    return response()->json(['message' => 'Vidéo trop lourde (max. 50 Mo).'], 422);
+                }
+                $mediaType = Media::TYPE_VIDEO_3D;
+                $path = $file->store("listings/video-3d/{$subDir}", 'public');
+            } elseif (in_array($extension, ['glb', 'gltf'], true)) {
+                if ($sizeKb > 51200) {
+                    return response()->json(['message' => 'Fichier 3D trop lourd (max. 50 Mo).'], 422);
+                }
+                $mediaType = Media::TYPE_MODEL_3D;
+                $path = $file->store("listings/models-3d/{$subDir}", 'public');
+            } else {
+                if ($sizeKb > 51200) {
+                    return response()->json(['message' => 'Fichier trop lourd (max. 50 Mo).'], 422);
+                }
+                $mediaType = Media::TYPE_VIDEO_3D;
+                $path = $file->store("listings/video-3d/{$subDir}", 'public');
+            }
         }
 
         /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
