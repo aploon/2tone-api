@@ -36,6 +36,7 @@ Route::get('/cities/{city}/neighborhoods', [CityController::class, 'neighborhood
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/listings', [ListingController::class, 'store']);
     Route::post('/listings/media', [ListingController::class, 'uploadMedia']);
+    Route::delete('/listings/media', [ListingController::class, 'deleteMedia']);
     Route::get('/favorites', [FavoriteController::class, 'index']);
     Route::post('/favorites', [FavoriteController::class, 'store']);
     Route::delete('/favorites/{listingId}', [FavoriteController::class, 'destroy']);

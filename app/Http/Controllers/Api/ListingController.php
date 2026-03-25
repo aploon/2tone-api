@@ -233,12 +233,66 @@ class ListingController extends Controller
             ], 422);
         }
 
-        $url = Storage::disk('public')->url($path);
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('public');
+        $url = $disk->url($path);
 
         return response()->json([
             'url' => $url,
             'path' => $path,
             'type' => $mediaType,
         ]);
+    }
+
+    /**
+     * Supprime un média uploadé temporairement (avant création de la fiche).
+     * Utile quand l'utilisateur retire un fichier via l'icône "X" du formulaire.
+     */
+    public function deleteMedia(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->isOwner()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $data = $request->validate([
+            'path' => ['required', 'string'],
+        ]);
+
+        $path = (string) $data['path'];
+
+        // Prevent path traversal / arbitrary deletion.
+        if (str_contains($path, '..')) {
+            return response()->json(['message' => 'Chemin invalide.'], 422);
+        }
+
+        $allowedPrefixes = [
+            'listings/photos/',
+            'listings/video-3d/',
+            'listings/models-3d/',
+        ];
+
+        $allowed = false;
+        foreach ($allowedPrefixes as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                $allowed = true;
+                break;
+            }
+        }
+
+        if (! $allowed) {
+            return response()->json(['message' => 'Chemin non autorisé.'], 422);
+        }
+
+        $disk = Storage::disk('public');
+        if (! $disk->exists($path)) {
+            return response()->json(['message' => 'Fichier introuvable.'], 404);
+        }
+
+        $disk->delete($path);
+
+        return response()->json(['deleted' => true]);
     }
 }
