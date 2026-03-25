@@ -184,7 +184,8 @@ class ListingController extends Controller
     }
 
     /**
-     * Upload d’un fichier média (image) pour une future annonce ; retourne l’URL publique à réutiliser dans store().
+     * Upload d’un fichier média pour une future annonce.
+     * Le type Media (image, video_3d, model_3d) est déduit du MIME / extension.
      */
     public function uploadMedia(Request $request): JsonResponse
     {
@@ -196,15 +197,47 @@ class ListingController extends Controller
         }
 
         $request->validate([
-            'file' => ['required', 'file', 'image', 'max:10240'],
+            'file' => ['required', 'file'],
         ]);
 
-        $path = $request->file('file')->store('listings/'.date('Y/m'), 'public');
+        $file = $request->file('file');
+        $mime = (string) $file->getMimeType();
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $sizeKb = (int) ceil($file->getSize() / 1024);
+
+        $subDir = date('Y/m');
+        $mediaType = null;
+
+        if (str_starts_with($mime, 'image/')) {
+            if ($sizeKb > 10240) {
+                return response()->json(['message' => 'Image trop lourde (max. 10 Mo).'], 422);
+            }
+            $mediaType = Media::TYPE_IMAGE;
+            $path = $file->store("listings/photos/{$subDir}", 'public');
+        } elseif (str_starts_with($mime, 'video/')) {
+            if ($sizeKb > 51200) {
+                return response()->json(['message' => 'Vidéo trop lourde (max. 50 Mo).'], 422);
+            }
+            $mediaType = Media::TYPE_VIDEO_3D;
+            $path = $file->store("listings/video-3d/{$subDir}", 'public');
+        } elseif (in_array($extension, ['glb', 'gltf'], true)) {
+            if ($sizeKb > 51200) {
+                return response()->json(['message' => 'Fichier 3D trop lourd (max. 50 Mo).'], 422);
+            }
+            $mediaType = Media::TYPE_MODEL_3D;
+            $path = $file->store("listings/models-3d/{$subDir}", 'public');
+        } else {
+            return response()->json([
+                'message' => 'Type de fichier non pris en charge. Utilisez une image, une vidéo ou un modèle 3D (.glb / .gltf).',
+            ], 422);
+        }
+
         $url = Storage::disk('public')->url($path);
 
         return response()->json([
             'url' => $url,
             'path' => $path,
+            'type' => $mediaType,
         ]);
     }
 }

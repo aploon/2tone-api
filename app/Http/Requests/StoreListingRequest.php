@@ -34,7 +34,7 @@ class StoreListingRequest extends FormRequest
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'media' => ['nullable', 'array', 'max:20'],
-            'media.*.type' => ['required_with:media', 'string', Rule::in([Media::TYPE_IMAGE, Media::TYPE_VIDEO_3D])],
+            'media.*.type' => ['required_with:media', 'string', Rule::in([Media::TYPE_IMAGE, Media::TYPE_VIDEO_3D, Media::TYPE_MODEL_3D])],
             'media.*.url' => ['required_with:media', 'string', 'max:2048'],
             'media.*.is_primary' => ['sometimes', 'boolean'],
             'media.*.sort_order' => ['sometimes', 'integer', 'min:0'],
