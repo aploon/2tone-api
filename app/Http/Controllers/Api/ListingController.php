@@ -228,9 +228,13 @@ class ListingController extends Controller
             $mediaType = Media::TYPE_MODEL_3D;
             $path = $file->store("listings/models-3d/{$subDir}", 'public');
         } else {
-            return response()->json([
-                'message' => 'Type de fichier non pris en charge. Utilisez une image, une vidéo ou un modèle 3D (.glb / .gltf).',
-            ], 422);
+            // Pour la section "Visite 3D / vidéo" côté app, on veut accepter aussi des types inattendus.
+            // Par défaut, on stocke en tant que vidéo_3d (même si la restitution dépendra du fichier).
+            if ($sizeKb > 51200) {
+                return response()->json(['message' => 'Fichier trop lourd (max. 50 Mo).'], 422);
+            }
+            $mediaType = Media::TYPE_VIDEO_3D;
+            $path = $file->store("listings/video-3d/{$subDir}", 'public');
         }
 
         /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
