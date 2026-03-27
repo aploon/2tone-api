@@ -37,6 +37,8 @@ class Listing extends Model
 
     public const STATUS_REJECTED = 'rejected';
 
+    public const STATUS_CORRECTION_REQUESTED = 'correction_requested';
+
     protected $fillable = [
         'owner_id',
         'neighborhood_id',
@@ -122,5 +124,10 @@ class Listing extends Model
     public function hasVideo3d(): bool
     {
         return $this->media()->where('type', 'video_3d')->exists();
+    }
+
+    public function correctionRequests(): HasMany
+    {
+        return $this->hasMany(ListingCorrectionRequest::class, 'listing_id')->orderByDesc('created_at');
     }
 }

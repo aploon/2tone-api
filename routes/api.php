@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\GeocodingController;
 use App\Http\Controllers\Api\FavoriteController;
+use App\Http\Controllers\Api\ListingCorrectionRequestController;
 use App\Http\Controllers\Api\ListingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/listings', [ListingController::class, 'store']);
     Route::post('/listings/media', [ListingController::class, 'uploadMedia']);
     Route::delete('/listings/media', [ListingController::class, 'deleteMedia']);
+    Route::get('/owner/listing-corrections', [ListingCorrectionRequestController::class, 'ownerIndex']);
+    Route::post('/owner/listing-corrections/{id}/validate', [ListingCorrectionRequestController::class, 'ownerValidate']);
+    Route::post('/admin/listings/{listingId}/corrections', [ListingCorrectionRequestController::class, 'adminStore']);
     Route::get('/favorites', [FavoriteController::class, 'index']);
     Route::post('/favorites', [FavoriteController::class, 'store']);
     Route::delete('/favorites/{listingId}', [FavoriteController::class, 'destroy']);
