@@ -31,8 +31,10 @@ class ListingCorrectionRequestController extends Controller
             $q->where('status', (string) $request->input('status'));
         }
 
-        $rows = $q->orderByDesc('created_at')
-            ->paginate($request->integer('per_page', 20));
+        // Simple order by: open status first, then by created_at desc
+        $q->orderBy('status', 'desc')->orderByDesc('created_at');
+
+        $rows = $q->paginate($request->integer('per_page', 20));
 
         return response()->json($rows);
     }
