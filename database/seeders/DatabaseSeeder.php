@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             NeighborhoodSeeder::class,
             UserSeeder::class,
             ListingSeeder::class,
+            ListingCorrectionRequestSeeder::class,
         ]);
     }
 }

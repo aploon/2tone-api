@@ -19,7 +19,7 @@ class ListingCorrectionRequestController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (! $user->isOwner()) {
+        if (!$user->isOwner()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
