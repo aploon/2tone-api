@@ -140,6 +140,22 @@ class ListingController extends Controller
         $mediaItems = $data['media'] ?? [];
         unset($data['media']);
 
+        $hasPrimaryImage = false;
+        foreach ($mediaItems as $item) {
+            $isPrimary = (bool) ($item['is_primary'] ?? false);
+            $isImage = ($item['type'] ?? null) === Media::TYPE_IMAGE;
+            if ($isPrimary && $isImage) {
+                $hasPrimaryImage = true;
+                break;
+            }
+        }
+
+        if (! $hasPrimaryImage) {
+            return response()->json([
+                'message' => 'Une image de couverture est obligatoire (is_primary=true).',
+            ], 422);
+        }
+
         $fee = (float) config('listing.publication_fee', 5000);
 
         $listing = DB::transaction(function () use ($user, $data, $mediaItems, $fee) {
@@ -164,7 +180,7 @@ class ListingController extends Controller
                     'listing_id' => $listing->id,
                     'type' => $item['type'],
                     'url' => $item['url'],
-                    'is_primary' => (bool) ($item['is_primary'] ?? ($index === 0)),
+                    'is_primary' => (bool) ($item['is_primary'] ?? false),
                     'sort_order' => (int) ($item['sort_order'] ?? $index),
                 ]);
             }
