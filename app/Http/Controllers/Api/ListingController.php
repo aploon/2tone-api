@@ -111,11 +111,30 @@ class ListingController extends Controller
         return response()->json($listings);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
-        $listing = Listing::with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number'])
-            ->visible()
-            ->find($id);
+        /** @var User|null $user */
+        $user = $request->user();
+
+        $baseQuery = Listing::with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number']);
+
+        if ($user && $user->isAdmin()) {
+            $listing = (clone $baseQuery)->find($id);
+        } elseif ($user) {
+            $listing = (clone $baseQuery)
+                ->where('id', $id)
+                ->where(function ($q) use ($user) {
+                    $q->where(function ($qq) {
+                        $qq->visible();
+                    });
+                    $q->orWhere('owner_id', $user->id);
+                })
+                ->first();
+        } else {
+            $listing = (clone $baseQuery)
+                ->visible()
+                ->find($id);
+        }
 
         if (! $listing) {
             return response()->json(['message' => 'Listing not found'], 404);
@@ -209,6 +228,97 @@ class ListingController extends Controller
         });
 
         return response()->json($listing, 201);
+    }
+
+    /**
+     * Update an existing listing by owner/admin.
+     * The listing returns to pending for moderation after edits.
+     */
+    public function update(Request $request, int $id): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->isOwner()) {
+            return response()->json(['message' => 'Seuls les propriétaires peuvent modifier une annonce.'], 403);
+        }
+
+        $listing = Listing::with('media')->find($id);
+        if (! $listing) {
+            return response()->json(['message' => 'Listing not found'], 404);
+        }
+
+        if ((int) $listing->owner_id !== (int) $user->id && ! $user->isAdmin()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'type' => ['required', 'string', 'in:'.implode(',', Listing::getTypes())],
+            'price' => ['required', 'integer', 'min:0'],
+            'billing_period' => ['required', 'string'],
+            'neighborhood_id' => ['required', 'integer', 'exists:neighborhoods,id'],
+            'bedrooms' => ['sometimes', 'integer', 'min:0', 'max:255'],
+            'bathrooms' => ['sometimes', 'integer', 'min:0', 'max:255'],
+            'surface_sqm' => ['nullable', 'integer', 'min:0'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'media' => ['nullable', 'array', 'max:20'],
+            'media.*.type' => ['required_with:media', 'string', 'in:'.implode(',', [Media::TYPE_IMAGE, Media::TYPE_VIDEO_3D, Media::TYPE_MODEL_3D])],
+            'media.*.url' => ['required_with:media', 'string', 'max:2048'],
+            'media.*.is_primary' => ['sometimes', 'boolean'],
+            'media.*.sort_order' => ['sometimes', 'integer', 'min:0'],
+        ]);
+
+        $mediaItems = $data['media'] ?? [];
+        unset($data['media']);
+
+        $hasPrimaryImage = false;
+        foreach ($mediaItems as $item) {
+            $isPrimary = (bool) ($item['is_primary'] ?? false);
+            $isImage = ($item['type'] ?? null) === Media::TYPE_IMAGE;
+            if ($isPrimary && $isImage) {
+                $hasPrimaryImage = true;
+                break;
+            }
+        }
+
+        if (! $hasPrimaryImage) {
+            return response()->json([
+                'message' => 'Une image de couverture est obligatoire (is_primary=true).',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($listing, $data, $mediaItems) {
+            $listing->update([
+                'neighborhood_id' => $data['neighborhood_id'],
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'type' => $data['type'],
+                'price' => $data['price'],
+                'billing_period' => $data['billing_period'],
+                'publication_status' => Listing::STATUS_PENDING,
+                'bedrooms' => $data['bedrooms'] ?? 0,
+                'bathrooms' => $data['bathrooms'] ?? 0,
+                'surface_sqm' => $data['surface_sqm'] ?? null,
+                'latitude' => $data['latitude'] ?? null,
+                'longitude' => $data['longitude'] ?? null,
+            ]);
+
+            Media::where('listing_id', $listing->id)->delete();
+            foreach ($mediaItems as $index => $item) {
+                Media::create([
+                    'listing_id' => $listing->id,
+                    'type' => $item['type'],
+                    'url' => $item['url'],
+                    'is_primary' => (bool) ($item['is_primary'] ?? false),
+                    'sort_order' => (int) ($item['sort_order'] ?? $index),
+                ]);
+            }
+        });
+
+        return response()->json($listing->fresh(['neighborhood.city', 'media']));
     }
 
     /**
