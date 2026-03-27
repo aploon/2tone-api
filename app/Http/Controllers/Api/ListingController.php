@@ -167,7 +167,7 @@ class ListingController extends Controller
                 'type' => $data['type'],
                 'price' => $data['price'],
                 'billing_period' => $data['billing_period'],
-                'publication_status' => Listing::STATUS_PUBLISHED,
+                'publication_status' => Listing::STATUS_PENDING,
                 'bedrooms' => $data['bedrooms'] ?? 0,
                 'bathrooms' => $data['bathrooms'] ?? 0,
                 'surface_sqm' => $data['surface_sqm'] ?? null,
