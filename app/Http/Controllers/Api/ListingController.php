@@ -19,9 +19,17 @@ class ListingController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Listing::query()
-            ->with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number'])
-            ->visible()
-            ->where('publication_status', Listing::STATUS_PUBLISHED);
+            ->with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number']);
+
+        // Par défaut, côté public, on ne retourne que les annonces visibles/publiées.
+        $ownerId = $request->input('owner_id');
+        if ($ownerId !== null && $ownerId !== '') {
+            $query->where('owner_id', (int) $ownerId);
+        } else {
+            $query
+                ->visible()
+                ->where('publication_status', Listing::STATUS_PUBLISHED);
+        }
 
         if ($request->filled('neighborhood_id')) {
             $query->where('neighborhood_id', $request->neighborhood_id);
@@ -33,8 +41,11 @@ class ListingController extends Controller
             });
         }
 
-        if ($request->filled('owner_id')) {
-            $query->where('owner_id', $request->owner_id);
+        if ($request->filled('publication_status')) {
+            $statuses = array_values(array_filter(array_map('trim', explode(',', (string) $request->publication_status))));
+            if (!empty($statuses)) {
+                $query->whereIn('publication_status', $statuses);
+            }
         }
 
         if ($request->filled('type')) {
