@@ -20,11 +20,15 @@ class StoreListingRequest extends FormRequest
     {
         return [
             /**
-             * Simulation : doit être true après l’action « Payer » côté client.
+             * `draft` : brouillon (paiement non requis). `pending` : soumission pour validation (paiement simulé requis).
+             */
+            'save_as' => ['required', 'string', Rule::in(['draft', 'pending'])],
+            /**
+             * Obligatoire à true uniquement si save_as = pending (voir withValidator).
              *
              * @todo Payer : remplacer par vérification gateway (intent Stripe / Orange Money / webhook) avant persistance.
              */
-            'payment_confirmed' => ['required', 'boolean', Rule::in([true])],
+            'payment_confirmed' => ['nullable', 'boolean'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type' => ['required', 'string', Rule::in(Listing::getTypes())],
@@ -47,6 +51,13 @@ class StoreListingRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            if ($this->input('save_as') === 'pending' && ! $this->boolean('payment_confirmed')) {
+                $validator->errors()->add(
+                    'payment_confirmed',
+                    'Le paiement doit être confirmé pour soumettre l’annonce pour validation.',
+                );
+            }
+
             $media = $this->input('media', []);
             $imageCount = 0;
             foreach ($media as $item) {

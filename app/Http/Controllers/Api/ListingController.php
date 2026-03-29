@@ -162,6 +162,8 @@ class ListingController extends Controller
          * Pour les tests, le client envoie payment_confirmed: true uniquement après le bouton « Payer ».
          */
         $data = $request->validated();
+        $saveAs = $data['save_as'] ?? 'pending';
+        unset($data['save_as']);
         unset($data['payment_confirmed']);
 
         $mediaItems = $data['media'] ?? [];
@@ -192,7 +194,9 @@ class ListingController extends Controller
 
         $fee = (float) config('listing.publication_fee', 5000);
 
-        $listing = DB::transaction(function () use ($user, $data, $mediaItems, $fee) {
+        $publicationStatus = $saveAs === 'draft' ? Listing::STATUS_DRAFT : Listing::STATUS_PENDING;
+
+        $listing = DB::transaction(function () use ($user, $data, $mediaItems, $fee, $publicationStatus, $saveAs) {
             $listing = Listing::create([
                 'owner_id' => $user->id,
                 'neighborhood_id' => $data['neighborhood_id'],
@@ -201,7 +205,7 @@ class ListingController extends Controller
                 'type' => $data['type'],
                 'price' => $data['price'],
                 'billing_period' => $data['billing_period'],
-                'publication_status' => Listing::STATUS_PENDING,
+                'publication_status' => $publicationStatus,
                 'bedrooms' => $data['bedrooms'] ?? 0,
                 'bathrooms' => $data['bathrooms'] ?? 0,
                 'surface_sqm' => $data['surface_sqm'] ?? null,
@@ -219,14 +223,16 @@ class ListingController extends Controller
                 ]);
             }
 
-            Payment::create([
-                'listing_id' => $listing->id,
-                'amount' => $fee,
-                'status' => Payment::STATUS_COMPLETED,
-                'method' => 'simulated',
-                'reference' => 'SIM-'.Str::uuid()->toString(),
-                'paid_at' => now(),
-            ]);
+            if ($saveAs === 'pending') {
+                Payment::create([
+                    'listing_id' => $listing->id,
+                    'amount' => $fee,
+                    'status' => Payment::STATUS_COMPLETED,
+                    'method' => 'simulated',
+                    'reference' => 'SIM-'.Str::uuid()->toString(),
+                    'paid_at' => now(),
+                ]);
+            }
 
             return $listing->fresh(['neighborhood.city', 'media']);
         });
@@ -257,6 +263,7 @@ class ListingController extends Controller
         }
 
         $data = $request->validate([
+            'save_as' => ['required', 'string', 'in:draft,pending'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'type' => ['required', 'string', 'in:'.implode(',', Listing::getTypes())],
@@ -274,6 +281,9 @@ class ListingController extends Controller
             'media.*.is_primary' => ['sometimes', 'boolean'],
             'media.*.sort_order' => ['sometimes', 'integer', 'min:0'],
         ]);
+
+        $saveAs = $data['save_as'] ?? 'pending';
+        unset($data['save_as']);
 
         $mediaItems = $data['media'] ?? [];
         unset($data['media']);
@@ -301,7 +311,9 @@ class ListingController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($listing, $data, $mediaItems) {
+        $publicationStatusAfterSave = $saveAs === 'draft' ? Listing::STATUS_DRAFT : Listing::STATUS_PENDING;
+
+        DB::transaction(function () use ($listing, $data, $mediaItems, $publicationStatusAfterSave) {
             $listing->update([
                 'neighborhood_id' => $data['neighborhood_id'],
                 'title' => $data['title'],
@@ -309,7 +321,7 @@ class ListingController extends Controller
                 'type' => $data['type'],
                 'price' => $data['price'],
                 'billing_period' => $data['billing_period'],
-                'publication_status' => Listing::STATUS_PENDING,
+                'publication_status' => $publicationStatusAfterSave,
                 'bedrooms' => $data['bedrooms'] ?? 0,
                 'bathrooms' => $data['bathrooms'] ?? 0,
                 'surface_sqm' => $data['surface_sqm'] ?? null,
