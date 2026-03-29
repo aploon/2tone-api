@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Listing extends Model
 {
@@ -98,9 +97,16 @@ class Listing extends Model
         return $this->hasMany(Media::class, 'listing_id')->orderBy('sort_order');
     }
 
-    public function payment(): HasOne
+    public function payments(): HasMany
     {
-        return $this->hasOne(Payment::class, 'listing_id');
+        return $this->hasMany(Payment::class, 'listing_id');
+    }
+
+    public function hasCompletedPublicationPayment(): bool
+    {
+        return $this->payments()
+            ->where('status', Payment::STATUS_COMPLETED)
+            ->exists();
     }
 
     public function favoritedBy(): BelongsToMany

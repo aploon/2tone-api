@@ -6,14 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreListingRequest;
 use App\Models\Listing;
 use App\Models\Media;
-use App\Models\Payment;
 use App\Models\User;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class ListingController extends Controller
 {
@@ -64,7 +62,7 @@ class ListingController extends Controller
         if ($request->filled('q')) {
             $terms = array_values(array_filter(preg_split('/\s+/', trim((string) $request->q))));
 
-            if (! empty($terms)) {
+            if (!empty($terms)) {
                 $scoreParts = [];
                 $scoreBindings = [];
 
@@ -146,7 +144,7 @@ class ListingController extends Controller
     }
 
     /**
-     * Enregistre une annonce après validation du paiement (simulation ou future intégration gateway).
+     * Création d’une annonce en brouillon uniquement. La soumission pour validation (pending) passe par PUT après paiement FedaPay.
      */
     public function store(StoreListingRequest $request): JsonResponse
     {
@@ -157,14 +155,8 @@ class ListingController extends Controller
             return response()->json(['message' => 'Seuls les propriétaires peuvent publier une annonce.'], 403);
         }
 
-        /**
-         * @todo Payer : vérifier ici le paiement réel (montant, référence gateway, idempotence) avant toute écriture en base.
-         * Pour les tests, le client envoie payment_confirmed: true uniquement après le bouton « Payer ».
-         */
         $data = $request->validated();
-        $saveAs = $data['save_as'] ?? 'pending';
         unset($data['save_as']);
-        unset($data['payment_confirmed']);
 
         $mediaItems = $data['media'] ?? [];
         unset($data['media']);
@@ -172,7 +164,7 @@ class ListingController extends Controller
         $galleryImageCount = collect($mediaItems)
             ->filter(function (array $item): bool {
                 return ($item['type'] ?? null) === Media::TYPE_IMAGE
-                    && ! ((bool) ($item['is_primary'] ?? false));
+                    && !((bool) ($item['is_primary'] ?? false));
             })
             ->count();
         if ($galleryImageCount > Listing::MAX_IMAGES_PER_LISTING) {
@@ -197,11 +189,7 @@ class ListingController extends Controller
             ], 422);
         }
 
-        $fee = (float) config('listing.publication_fee', 5000);
-
-        $publicationStatus = $saveAs === 'draft' ? Listing::STATUS_DRAFT : Listing::STATUS_PENDING;
-
-        $listing = DB::transaction(function () use ($user, $data, $mediaItems, $fee, $publicationStatus, $saveAs) {
+        $listing = DB::transaction(function () use ($user, $data, $mediaItems) {
             $listing = Listing::create([
                 'owner_id' => $user->id,
                 'neighborhood_id' => $data['neighborhood_id'],
@@ -210,7 +198,7 @@ class ListingController extends Controller
                 'type' => $data['type'],
                 'price' => $data['price'],
                 'billing_period' => $data['billing_period'],
-                'publication_status' => $publicationStatus,
+                'publication_status' => Listing::STATUS_DRAFT,
                 'bedrooms' => $data['bedrooms'] ?? 0,
                 'bathrooms' => $data['bathrooms'] ?? 0,
                 'surface_sqm' => $data['surface_sqm'] ?? null,
@@ -225,17 +213,6 @@ class ListingController extends Controller
                     'url' => $item['url'],
                     'is_primary' => (bool) ($item['is_primary'] ?? false),
                     'sort_order' => (int) ($item['sort_order'] ?? $index),
-                ]);
-            }
-
-            if ($saveAs === 'pending') {
-                Payment::create([
-                    'listing_id' => $listing->id,
-                    'amount' => $fee,
-                    'status' => Payment::STATUS_COMPLETED,
-                    'method' => 'simulated',
-                    'reference' => 'SIM-'.Str::uuid()->toString(),
-                    'paid_at' => now(),
                 ]);
             }
 
@@ -296,7 +273,7 @@ class ListingController extends Controller
         $galleryImageCount = collect($mediaItems)
             ->filter(function (array $item): bool {
                 return ($item['type'] ?? null) === Media::TYPE_IMAGE
-                    && ! ((bool) ($item['is_primary'] ?? false));
+                    && !((bool) ($item['is_primary'] ?? false));
             })
             ->count();
         if ($galleryImageCount > Listing::MAX_IMAGES_PER_LISTING) {
@@ -318,6 +295,12 @@ class ListingController extends Controller
         if (!$hasPrimaryImage) {
             return response()->json([
                 'message' => 'Une image de couverture est obligatoire (is_primary=true).',
+            ], 422);
+        }
+
+        if ($saveAs === 'pending' && !$listing->hasCompletedPublicationPayment()) {
+            return response()->json([
+                'message' => 'Le paiement de publication est requis avant soumission pour validation.',
             ], 422);
         }
 
@@ -464,7 +447,7 @@ class ListingController extends Controller
             }
         }
 
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        /** @var FilesystemAdapter $disk */
         $disk = Storage::disk('public');
         $url = $disk->url($path);
 

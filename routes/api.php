@@ -2,10 +2,11 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
-use App\Http\Controllers\Api\GeocodingController;
 use App\Http\Controllers\Api\FavoriteController;
-use App\Http\Controllers\Api\ListingCorrectionRequestController;
+use App\Http\Controllers\Api\GeocodingController;
 use App\Http\Controllers\Api\ListingController;
+use App\Http\Controllers\Api\ListingCorrectionRequestController;
+use App\Http\Controllers\Api\ListingPublicationPaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -38,8 +39,12 @@ Route::get('/cities/{city}/neighborhoods', [CityController::class, 'neighborhood
 Route::get('/geocode', [GeocodingController::class, 'search']);
 Route::get('/geocode/search', [GeocodingController::class, 'searchSuggestions']);
 
+Route::get('/payments/fedapay/callback', [ListingPublicationPaymentController::class, 'fedapayCallback']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/listings', [ListingController::class, 'store']);
+    Route::post('/listings/{id}/payment/initiate', [ListingPublicationPaymentController::class, 'initiate']);
+    Route::get('/listings/{id}/payment/status', [ListingPublicationPaymentController::class, 'status']);
     Route::put('/listings/{id}', [ListingController::class, 'update']);
     Route::delete('/listings/{id}', [ListingController::class, 'destroy']);
     Route::post('/listings/media', [ListingController::class, 'uploadMedia']);

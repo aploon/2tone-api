@@ -46,7 +46,7 @@ class GeocodingController extends Controller
         }
 
         $data = $res->json();
-        if (! is_array($data) || count($data) === 0) {
+        if (!is_array($data) || count($data) === 0) {
             return response()->json([
                 'latitude' => null,
                 'longitude' => null,
@@ -105,7 +105,7 @@ class GeocodingController extends Controller
         }
 
         $data = $res->json();
-        if (! is_array($data) || count($data) === 0) {
+        if (!is_array($data) || count($data) === 0) {
             return response()->json(['results' => []]);
         }
 
