@@ -59,16 +59,16 @@ class StoreListingRequest extends FormRequest
             }
 
             $media = $this->input('media', []);
-            $imageCount = 0;
+            $galleryImageCount = 0;
             foreach ($media as $item) {
-                if (($item['type'] ?? null) === Media::TYPE_IMAGE) {
-                    $imageCount++;
+                if (($item['type'] ?? null) === Media::TYPE_IMAGE && ! ((bool) ($item['is_primary'] ?? false))) {
+                    $galleryImageCount++;
                 }
             }
-            if ($imageCount > Listing::MAX_IMAGES_PER_LISTING) {
+            if ($galleryImageCount > Listing::MAX_IMAGES_PER_LISTING) {
                 $validator->errors()->add(
                     'media',
-                    'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos par annonce.',
+                    'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos en galerie (hors couverture).',
                 );
             }
         });

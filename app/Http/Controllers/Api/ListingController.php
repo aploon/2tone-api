@@ -169,10 +169,15 @@ class ListingController extends Controller
         $mediaItems = $data['media'] ?? [];
         unset($data['media']);
 
-        $imageCount = collect($mediaItems)->where('type', Media::TYPE_IMAGE)->count();
-        if ($imageCount > Listing::MAX_IMAGES_PER_LISTING) {
+        $galleryImageCount = collect($mediaItems)
+            ->filter(function (array $item): bool {
+                return ($item['type'] ?? null) === Media::TYPE_IMAGE
+                    && ! ((bool) ($item['is_primary'] ?? false));
+            })
+            ->count();
+        if ($galleryImageCount > Listing::MAX_IMAGES_PER_LISTING) {
             return response()->json([
-                'message' => 'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos par annonce.',
+                'message' => 'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos en galerie (hors couverture).',
             ], 422);
         }
 
@@ -288,10 +293,15 @@ class ListingController extends Controller
         $mediaItems = $data['media'] ?? [];
         unset($data['media']);
 
-        $imageCount = collect($mediaItems)->where('type', Media::TYPE_IMAGE)->count();
-        if ($imageCount > Listing::MAX_IMAGES_PER_LISTING) {
+        $galleryImageCount = collect($mediaItems)
+            ->filter(function (array $item): bool {
+                return ($item['type'] ?? null) === Media::TYPE_IMAGE
+                    && ! ((bool) ($item['is_primary'] ?? false));
+            })
+            ->count();
+        if ($galleryImageCount > Listing::MAX_IMAGES_PER_LISTING) {
             return response()->json([
-                'message' => 'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos par annonce.',
+                'message' => 'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos en galerie (hors couverture).',
             ], 422);
         }
 

@@ -39,7 +39,7 @@ class Listing extends Model
 
     public const STATUS_CORRECTION_REQUESTED = 'correction_requested';
 
-    /** Nombre maximum d’images (cover + galerie) par annonce. */
+    /** Nombre maximum de photos en galerie (hors image de couverture `is_primary`). */
     public const MAX_IMAGES_PER_LISTING = 8;
 
     protected $fillable = [
