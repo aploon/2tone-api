@@ -167,6 +167,13 @@ class ListingController extends Controller
         $mediaItems = $data['media'] ?? [];
         unset($data['media']);
 
+        $imageCount = collect($mediaItems)->where('type', Media::TYPE_IMAGE)->count();
+        if ($imageCount > Listing::MAX_IMAGES_PER_LISTING) {
+            return response()->json([
+                'message' => 'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos par annonce.',
+            ], 422);
+        }
+
         $hasPrimaryImage = false;
         foreach ($mediaItems as $item) {
             $isPrimary = (bool) ($item['is_primary'] ?? false);
@@ -270,6 +277,13 @@ class ListingController extends Controller
 
         $mediaItems = $data['media'] ?? [];
         unset($data['media']);
+
+        $imageCount = collect($mediaItems)->where('type', Media::TYPE_IMAGE)->count();
+        if ($imageCount > Listing::MAX_IMAGES_PER_LISTING) {
+            return response()->json([
+                'message' => 'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos par annonce.',
+            ], 422);
+        }
 
         $hasPrimaryImage = false;
         foreach ($mediaItems as $item) {

@@ -7,6 +7,7 @@ use App\Models\Listing;
 use App\Models\Media;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreListingRequest extends FormRequest
 {
@@ -41,5 +42,24 @@ class StoreListingRequest extends FormRequest
             'media.*.is_primary' => ['sometimes', 'boolean'],
             'media.*.sort_order' => ['sometimes', 'integer', 'min:0'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $media = $this->input('media', []);
+            $imageCount = 0;
+            foreach ($media as $item) {
+                if (($item['type'] ?? null) === Media::TYPE_IMAGE) {
+                    $imageCount++;
+                }
+            }
+            if ($imageCount > Listing::MAX_IMAGES_PER_LISTING) {
+                $validator->errors()->add(
+                    'media',
+                    'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos par annonce.',
+                );
+            }
+        });
     }
 }
