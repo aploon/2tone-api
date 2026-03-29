@@ -38,7 +38,7 @@ class FavoriteController extends Controller
             ->with(['neighborhood.city', 'media'])
             ->findOrFail($request->listing_id);
 
-        if (! $user->favorites()->where('listing_id', $listing->id)->exists()) {
+        if (!$user->favorites()->where('listing_id', $listing->id)->exists()) {
             $user->favorites()->attach($listing->id);
         }
 

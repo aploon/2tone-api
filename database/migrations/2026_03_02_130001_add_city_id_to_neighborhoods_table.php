@@ -16,7 +16,7 @@ return new class extends Migration
         $cityColumnExists = Schema::hasColumn('neighborhoods', 'city');
         if ($cityColumnExists) {
             $bamakoId = DB::table('cities')->where('name', 'Bamako')->value('id');
-            if (! $bamakoId) {
+            if (!$bamakoId) {
                 $bamakoId = DB::table('cities')->insertGetId(['name' => 'Bamako', 'created_at' => now(), 'updated_at' => now()]);
             }
             DB::table('neighborhoods')->update(['city_id' => $bamakoId]);

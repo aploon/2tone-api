@@ -115,8 +115,8 @@ class ListingController extends Controller
     public function show(int $id): JsonResponse
     {
         /**
-         * Route publique sans middleware auth:sanctum : utiliser le guard sanctum pour lire le Bearer token.
-         * $request->user() utiliserait le guard par défaut (web / session) et resterait null côté API mobile.
+         * App mobile n'utilise pas le guard web.
+         * Donc on utilise le guard sanctum pour lire le Bearer token
          */
         /** @var User|null $user */
         $user = auth('sanctum')->user();
