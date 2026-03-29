@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -136,7 +137,7 @@ class ListingController extends Controller
                 ->find($id);
         }
 
-        if (! $listing) {
+        if (!$listing) {
             return response()->json(['message' => 'Listing not found'], 404);
         }
 
