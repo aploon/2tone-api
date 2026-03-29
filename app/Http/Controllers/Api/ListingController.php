@@ -112,32 +112,28 @@ class ListingController extends Controller
         return response()->json($listings);
     }
 
-    public function show(Request $request, int $id): JsonResponse
+    public function show(int $id): JsonResponse
     {
+        /**
+         * Route publique sans middleware auth:sanctum : utiliser le guard sanctum pour lire le Bearer token.
+         * $request->user() utiliserait le guard par défaut (web / session) et resterait null côté API mobile.
+         */
         /** @var User|null $user */
-        $user = $request->user();
+        $user = auth('sanctum')->user();
 
-        $baseQuery = Listing::with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number']);
-
-        if ($user && $user->isAdmin()) {
-            $listing = (clone $baseQuery)->find($id);
-        } elseif ($user) {
-            $listing = (clone $baseQuery)
-                ->where('id', $id)
-                ->where(function ($q) use ($user) {
-                    $q->where(function ($qq) {
-                        $qq->visible();
-                    });
-                    $q->orWhere('owner_id', $user->id);
-                })
-                ->first();
-        } else {
-            $listing = (clone $baseQuery)
-                ->visible()
-                ->find($id);
-        }
+        $listing = Listing::with(['neighborhood.city', 'media', 'owner:id,name,telephone,whatsapp_number'])
+            ->find($id);
 
         if (!$listing) {
+            return response()->json(['message' => 'Listing not found'], 404);
+        }
+
+        $isVisible = $listing->publication_status === Listing::STATUS_PAID
+            || $listing->publication_status === Listing::STATUS_PUBLISHED;
+        $isOwner = $user && (int) $listing->owner_id === (int) $user->id;
+        $isAdmin = $user && $user->isAdmin();
+
+        if (!$isVisible && !$isOwner && !$isAdmin) {
             return response()->json(['message' => 'Listing not found'], 404);
         }
 
@@ -157,7 +153,7 @@ class ListingController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (! $user->isOwner()) {
+        if (!$user->isOwner()) {
             return response()->json(['message' => 'Seuls les propriétaires peuvent publier une annonce.'], 403);
         }
 
@@ -181,7 +177,7 @@ class ListingController extends Controller
             }
         }
 
-        if (! $hasPrimaryImage) {
+        if (!$hasPrimaryImage) {
             return response()->json([
                 'message' => 'Une image de couverture est obligatoire (is_primary=true).',
             ], 422);
@@ -240,16 +236,16 @@ class ListingController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (! $user->isOwner()) {
+        if (!$user->isOwner()) {
             return response()->json(['message' => 'Seuls les propriétaires peuvent modifier une annonce.'], 403);
         }
 
         $listing = Listing::with('media')->find($id);
-        if (! $listing) {
+        if (!$listing) {
             return response()->json(['message' => 'Listing not found'], 404);
         }
 
-        if ((int) $listing->owner_id !== (int) $user->id && ! $user->isAdmin()) {
+        if ((int) $listing->owner_id !== (int) $user->id && !$user->isAdmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -285,7 +281,7 @@ class ListingController extends Controller
             }
         }
 
-        if (! $hasPrimaryImage) {
+        if (!$hasPrimaryImage) {
             return response()->json([
                 'message' => 'Une image de couverture est obligatoire (is_primary=true).',
             ], 422);
@@ -334,7 +330,7 @@ class ListingController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (! $user->isOwner()) {
+        if (!$user->isOwner()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -426,7 +422,7 @@ class ListingController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if (! $user->isOwner()) {
+        if (!$user->isOwner()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -455,12 +451,12 @@ class ListingController extends Controller
             }
         }
 
-        if (! $allowed) {
+        if (!$allowed) {
             return response()->json(['message' => 'Chemin non autorisé.'], 422);
         }
 
         $disk = Storage::disk('public');
-        if (! $disk->exists($path)) {
+        if (!$disk->exists($path)) {
             return response()->json(['message' => 'Fichier introuvable.'], 404);
         }
 
