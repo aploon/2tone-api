@@ -345,6 +345,32 @@ class ListingController extends Controller
     }
 
     /**
+     * Supprime une annonce (propriétaire ou admin). Les médias et dépendances en base sont gérées par les contraintes.
+     */
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (!$user->isOwner()) {
+            return response()->json(['message' => 'Seuls les propriétaires peuvent supprimer une annonce.'], 403);
+        }
+
+        $listing = Listing::find($id);
+        if (!$listing) {
+            return response()->json(['message' => 'Listing not found'], 404);
+        }
+
+        if ((int) $listing->owner_id !== (int) $user->id && !$user->isAdmin()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $listing->delete();
+
+        return response()->json(['message' => 'Annonce supprimée.']);
+    }
+
+    /**
      * Upload d’un fichier média pour une future annonce.
      * Le comportement dépend d’un champ optionnel `target` envoyé par l’app :
      * - `images` : n’accepte que les images (max 10 Mo), stockées dans `listings/photos/...`

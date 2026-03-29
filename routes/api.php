@@ -41,6 +41,7 @@ Route::get('/geocode/search', [GeocodingController::class, 'searchSuggestions'])
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/listings', [ListingController::class, 'store']);
     Route::put('/listings/{id}', [ListingController::class, 'update']);
+    Route::delete('/listings/{id}', [ListingController::class, 'destroy']);
     Route::post('/listings/media', [ListingController::class, 'uploadMedia']);
     Route::delete('/listings/media', [ListingController::class, 'deleteMedia']);
     Route::get('/owner/listing-corrections', [ListingCorrectionRequestController::class, 'ownerIndex']);
