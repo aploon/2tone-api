@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Deep link (application mobile)
+    |--------------------------------------------------------------------------
+    |
+    | Préfixe de schéma pour ouvrir l’app (sans chemin ni query). Ex. 2tone://
+    | En dev Expo : exp://192.168.1.103:8081/--/
+    | Le code concatène le segment de route (ex. listing-payment) puis la query.
+    |
+    */
+
+    'deep_link_base' => env('APP_DEEP_LINK_BASE', '2tone://'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

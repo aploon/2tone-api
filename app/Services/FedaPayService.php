@@ -10,7 +10,7 @@ class FedaPayService
     public function configure(): void
     {
         $key = config('fedapay.secret_key');
-        if (!is_string($key) || $key === '') {
+        if (! is_string($key) || $key === '') {
             throw new InvalidArgumentException('FEDAPAY_SECRET_KEY is not configured.');
         }
         FedaPay::setApiKey($key);

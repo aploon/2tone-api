@@ -9,8 +9,8 @@ use App\Models\User;
 use App\Services\FedaPayService;
 use FedaPay\Transaction;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
@@ -30,10 +30,10 @@ class ListingPublicationPaymentController extends Controller
         $user = $request->user();
 
         $listing = Listing::query()->find($listingId);
-        if (!$listing) {
+        if (! $listing) {
             return response()->json(['message' => 'Annonce introuvable.'], 404);
         }
-        if ((int) $listing->owner_id !== (int) $user->id && !$user->isAdmin()) {
+        if ((int) $listing->owner_id !== (int) $user->id && ! $user->isAdmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -46,7 +46,7 @@ class ListingPublicationPaymentController extends Controller
             ]);
         }
 
-        if (!config('fedapay.secret_key')) {
+        if (! config('fedapay.secret_key')) {
             return response()->json(['message' => 'Paiement indisponible (configuration).'], 503);
         }
 
@@ -87,7 +87,7 @@ class ListingPublicationPaymentController extends Controller
         ];
 
         $returnTo = $request->input('return_to', 'create');
-        if (!in_array($returnTo, ['create', 'edit'], true)) {
+        if (! in_array($returnTo, ['create', 'edit'], true)) {
             $returnTo = 'create';
         }
 
@@ -113,7 +113,7 @@ class ListingPublicationPaymentController extends Controller
             return response()->json(['message' => 'Impossible de démarrer le paiement.'], 502);
         }
 
-        if (!is_string($paymentUrl) || $paymentUrl === '') {
+        if (! is_string($paymentUrl) || $paymentUrl === '') {
             return response()->json(['message' => 'Impossible de démarrer le paiement.'], 502);
         }
 
@@ -138,45 +138,64 @@ class ListingPublicationPaymentController extends Controller
 
     /**
      * Retour utilisateur après redirection FedaPay (ne pas se fier seul au statut query : vérification API).
+     * Affiche une page HTML avec le résultat (l’app reprend le premier plan après WebBrowser).
      */
-    public function fedapayCallback(Request $request): RedirectResponse
+    public function fedapayCallback(Request $request): Response
     {
         $transactionId = $request->query('id');
         if ($transactionId === null || $transactionId === '') {
-            return redirect()->away('2tone://listing-payment?error=missing_id');
+            return $this->returnStatusPage(
+                'danger',
+                'Retour incomplet',
+                'Identifiant de transaction manquant. Fermez cet onglet et reprenez depuis l’application 2TONE.',
+                'missing_id'
+            );
         }
 
         try {
-            if (!config('fedapay.secret_key')) {
-                return redirect()->away('2tone://listing-payment?error=config');
+            if (! config('fedapay.secret_key')) {
+                return $this->returnStatusPage(
+                    'danger',
+                    'Configuration serveur',
+                    'Le service de paiement n’est pas correctement configuré. Contactez le support.',
+                    'config'
+                );
             }
             $this->fedapayService->configure();
             $tx = Transaction::retrieve((string) $transactionId);
         } catch (Throwable $e) {
             Log::warning('FedaPay callback retrieve failed', ['exception' => $e]);
 
-            return redirect()->away('2tone://listing-payment?error=retrieve');
+            return $this->returnStatusPage(
+                'danger',
+                'Vérification impossible',
+                'Impossible de confirmer le statut auprès de FedaPay. Fermez cet onglet et vérifiez le paiement depuis l’application.',
+                'retrieve'
+            );
         }
 
         $payment = Payment::query()
             ->where('fedapay_transaction_id', (string) $tx->id)
             ->first();
 
-        if (!$payment && isset($tx->merchant_reference)) {
+        if (! $payment && isset($tx->merchant_reference)) {
             $payment = Payment::query()
                 ->where('reference', (string) $tx->merchant_reference)
                 ->first();
         }
 
-        if (!$payment) {
-            return redirect()->away('2tone://listing-payment?error=unknown_payment');
+        if (! $payment) {
+            return $this->returnStatusPage(
+                'danger',
+                'Transaction introuvable',
+                'Cette transaction n’est pas liée à une annonce de votre compte. Fermez cet onglet et reprenez depuis l’application.',
+                'unknown_payment'
+            );
         }
 
-        $listingId = $payment->listing_id;
+        $status = (string) $tx->status;
 
-        $returnTo = $this->resolveReturnTo($tx);
-
-        if ($this->isSuccessfulTransactionStatus((string) $tx->status)) {
+        if ($this->isSuccessfulTransactionStatus($status)) {
             if ($payment->status !== Payment::STATUS_COMPLETED) {
                 $payment->update([
                     'status' => Payment::STATUS_COMPLETED,
@@ -184,39 +203,77 @@ class ListingPublicationPaymentController extends Controller
                 ]);
             }
 
-            return redirect()->away(
-                '2tone://listing-payment?'.http_build_query([
-                    'listing_id' => $listingId,
-                    'paid' => '1',
-                    'to' => $returnTo,
-                ])
+            return $this->returnStatusPage(
+                'success',
+                'Paiement réussi',
+                'Votre paiement de publication est enregistré. Vous pouvez fermer cet onglet : l’application 2TONE est revenue au premier plan et met à jour le statut automatiquement.',
+                $status
             );
         }
 
-        return redirect()->away(
-            '2tone://listing-payment?'.http_build_query([
-                'listing_id' => $listingId,
-                'paid' => '0',
-                'to' => $returnTo,
-            ])
+        [$tone, $title, $subtitle] = $this->mapFedapayStatusToUi($status);
+
+        return $this->returnStatusPage(
+            $tone,
+            $title,
+            $subtitle,
+            $status
         );
     }
 
-    private function resolveReturnTo(object $tx): string
+    private function returnStatusPage(
+        string $tone,
+        string $title,
+        string $subtitle,
+        ?string $statusCode = null
+    ): Response {
+        return response()
+            ->view('fedapay.return-status', [
+                'tone' => $tone,
+                'title' => $title,
+                'subtitle' => $subtitle,
+                'statusCode' => $statusCode,
+            ])
+            ->header('Content-Type', 'text/html; charset=UTF-8');
+    }
+
+    /**
+     * @return array{0: string, 1: string, 2: string}
+     */
+    private function mapFedapayStatusToUi(string $status): array
     {
-        $meta = $tx->custom_metadata ?? null;
-        if (is_object($meta) && isset($meta->return_to)) {
-            $v = (string) $meta->return_to;
-
-            return in_array($v, ['create', 'edit'], true) ? $v : 'create';
-        }
-        if (is_array($meta) && isset($meta['return_to'])) {
-            $v = (string) $meta['return_to'];
-
-            return in_array($v, ['create', 'edit'], true) ? $v : 'create';
-        }
-
-        return 'create';
+        return match (true) {
+            in_array($status, ['canceled', 'cancelled'], true) => [
+                'warning',
+                'Paiement annulé',
+                'Vous avez annulé ou interrompu le paiement. Vous pouvez relancer une tentative depuis l’application.',
+            ],
+            $status === 'declined' => [
+                'warning',
+                'Paiement refusé',
+                'La transaction n’a pas été acceptée. Réessayez ou choisissez un autre moyen de paiement.',
+            ],
+            $status === 'pending' => [
+                'info',
+                'En attente de confirmation',
+                'Le paiement n’est pas encore finalisé. Revenez dans l’application dans quelques instants.',
+            ],
+            $status === 'expired' => [
+                'warning',
+                'Session expirée',
+                'Le délai de paiement est dépassé. Lancez un nouveau paiement depuis l’application.',
+            ],
+            $status === 'refunded' => [
+                'info',
+                'Remboursement',
+                'Cette transaction a été remboursée. Pour toute question, contactez le support.',
+            ],
+            default => [
+                'warning',
+                'Paiement non finalisé',
+                'La transaction n’a pas abouti. Vous pouvez vérifier le statut ou réessayer depuis l’application.',
+            ],
+        };
     }
 
     /**
@@ -228,10 +285,10 @@ class ListingPublicationPaymentController extends Controller
         $user = $request->user();
 
         $listing = Listing::query()->find($listingId);
-        if (!$listing) {
+        if (! $listing) {
             return response()->json(['message' => 'Annonce introuvable.'], 404);
         }
-        if ((int) $listing->owner_id !== (int) $user->id && !$user->isAdmin()) {
+        if ((int) $listing->owner_id !== (int) $user->id && ! $user->isAdmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
