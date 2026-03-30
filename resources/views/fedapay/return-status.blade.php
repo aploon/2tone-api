@@ -114,9 +114,8 @@
             <h1>{{ $title }}</h1>
             <p class="sub">{{ $subtitle }}</p>
             @if(!empty($statusCode))
-                <p class="meta">Statut FedaPay : <strong>{{ $statusCode }}</strong></p>
+                <p class="meta">Statut : <strong>{{ $statusCode }}</strong></p>
             @endif
-            <p class="note">Vous pouvez fermer cet onglet : l’application <strong>2TONE</strong> est revenue au premier plan — le statut du paiement s’y synchronise automatiquement.</p>
         </div>
         <p class="brand">2TONE</p>
     </div>

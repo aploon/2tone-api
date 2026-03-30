@@ -206,7 +206,7 @@ class ListingPublicationPaymentController extends Controller
             return $this->returnStatusPage(
                 'success',
                 'Paiement réussi',
-                'Votre paiement de publication est enregistré. Vous pouvez fermer cet onglet : l’application 2TONE est revenue au premier plan et met à jour le statut automatiquement.',
+                'Vous pouvez retourner à l’application !',
                 $status
             );
         }
@@ -255,8 +255,8 @@ class ListingPublicationPaymentController extends Controller
             ],
             $status === 'pending' => [
                 'info',
-                'En attente de confirmation',
-                'Le paiement n’est pas encore finalisé. Revenez dans l’application dans quelques instants.',
+                'Paiement toujours en attente',
+                'Le paiement n\'a pas été valider. Vous pouvez réessayer plus tard !',
             ],
             $status === 'expired' => [
                 'warning',
