@@ -17,10 +17,13 @@ class FedaPayService
         FedaPay::setEnvironment(config('fedapay.environment', 'sandbox'));
     }
 
-    public function callbackUrl(): string
+    /**
+     * URL de retour HTTP après paiement (une route par passerelle : /api/payments/callback/{gateway}).
+     */
+    public function publicationCallbackUrl(string $gatewayId): string
     {
         $base = rtrim((string) config('fedapay.callback_base_url', config('app.url')), '/');
 
-        return $base.'/api/payments/fedapay/callback';
+        return $base.'/api/payments/callback/'.$gatewayId;
     }
 }

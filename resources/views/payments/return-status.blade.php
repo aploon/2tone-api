@@ -35,10 +35,7 @@
             justify-content: center;
             padding: 1.5rem;
         }
-        .wrap {
-            width: 100%;
-            max-width: 420px;
-        }
+        .wrap { width: 100%; max-width: 420px; }
         .card {
             background: var(--card);
             border-radius: var(--radius);

@@ -39,10 +39,11 @@ Route::get('/cities/{city}/neighborhoods', [CityController::class, 'neighborhood
 Route::get('/geocode', [GeocodingController::class, 'search']);
 Route::get('/geocode/search', [GeocodingController::class, 'searchSuggestions']);
 
-Route::get('/payments/fedapay/callback', [ListingPublicationPaymentController::class, 'fedapayCallback']);
+Route::get('/payments/callback/{gateway}', [ListingPublicationPaymentController::class, 'callback']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/listings', [ListingController::class, 'store']);
+    Route::get('/listings/{id}/payment/methods', [ListingPublicationPaymentController::class, 'methods']);
     Route::post('/listings/{id}/payment/initiate', [ListingPublicationPaymentController::class, 'initiate']);
     Route::get('/listings/{id}/payment/status', [ListingPublicationPaymentController::class, 'status']);
     Route::put('/listings/{id}', [ListingController::class, 'update']);
