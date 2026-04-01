@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminDashboardController;
+use App\Http\Controllers\Api\AdminListingController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\FavoriteController;
@@ -60,5 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+    Route::get('/admin/listings', [AdminListingController::class, 'index']);
+    Route::patch('/admin/listings/{id}/publication-status', [AdminListingController::class, 'updatePublicationStatus']);
     Route::post('/admin/listings/{listingId}/corrections', [ListingCorrectionRequestController::class, 'adminStore']);
 });
