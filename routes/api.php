@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\FavoriteController;
@@ -52,8 +53,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/listings/media', [ListingController::class, 'deleteMedia']);
     Route::get('/owner/listing-corrections', [ListingCorrectionRequestController::class, 'ownerIndex']);
     Route::post('/owner/listing-corrections/{id}/validate', [ListingCorrectionRequestController::class, 'ownerValidate']);
-    Route::post('/admin/listings/{listingId}/corrections', [ListingCorrectionRequestController::class, 'adminStore']);
     Route::get('/favorites', [FavoriteController::class, 'index']);
     Route::post('/favorites', [FavoriteController::class, 'store']);
     Route::delete('/favorites/{listingId}', [FavoriteController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+    Route::post('/admin/listings/{listingId}/corrections', [ListingCorrectionRequestController::class, 'adminStore']);
 });
