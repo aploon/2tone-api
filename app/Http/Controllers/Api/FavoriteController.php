@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Listing;
+use App\Models\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -68,7 +69,13 @@ class FavoriteController extends Controller
         $media = $listing->media ?? [];
         $primaryImage = collect($media)->first(fn ($m) => $m->is_primary) ?? collect($media)->first(fn ($m) => $m->type === 'image');
         $imageUrl = $primaryImage?->url;
-        $has3dVisit = collect($media)->contains(fn ($m) => $m->type === 'video_3d');
+        $has3dVisit = collect($media)->contains(
+            fn ($m) => in_array($m->type, [
+                Media::TYPE_VIDEO_3D,
+                Media::TYPE_MODEL_3D,
+                Media::TYPE_PANORAMA_3D,
+            ], true)
+        );
 
         return [
             'id' => (string) $listing->id,
