@@ -39,17 +39,21 @@ class AuthController extends Controller
 
     public function register(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            /** Compte locataire / utilisateur (recherche, favoris) ou propriétaire (publication d'annonces). */
+            'role' => ['sometimes', 'string', Rule::in([User::ROLE_TENANT, User::ROLE_OWNER])],
         ]);
 
+        $role = $validated['role'] ?? User::ROLE_TENANT;
+
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => User::ROLE_TENANT,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $role,
             'status' => User::STATUS_ACTIVE,
         ]);
 
