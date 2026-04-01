@@ -45,9 +45,17 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             /** Compte locataire / utilisateur (recherche, favoris) ou propriétaire (publication d'annonces). */
             'role' => ['sometimes', 'string', Rule::in([User::ROLE_TENANT, User::ROLE_OWNER])],
+            /** Obligatoire pour les propriétaires : utilisé comme téléphone et numéro WhatsApp. */
+            'telephone' => [
+                Rule::requiredIf(fn () => ($request->input('role') ?? User::ROLE_TENANT) === User::ROLE_OWNER),
+                'nullable',
+                'string',
+                'max:30',
+            ],
         ]);
 
         $role = $validated['role'] ?? User::ROLE_TENANT;
+        $phone = isset($validated['telephone']) ? trim((string) $validated['telephone']) : '';
 
         $user = User::create([
             'name' => $validated['name'],
@@ -55,6 +63,8 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
             'role' => $role,
             'status' => User::STATUS_ACTIVE,
+            'telephone' => $role === User::ROLE_OWNER ? $phone : null,
+            'whatsapp_number' => $role === User::ROLE_OWNER ? $phone : null,
         ]);
 
         $token = $user->createToken('mobile')->plainTextToken;
