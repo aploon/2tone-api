@@ -10,14 +10,7 @@ class CitySeeder extends Seeder
     public function run(): void
     {
         $cities = [
-            'Bamako',
-            'Sikasso',
-            'Ségou',
-            'Mopti',
-            'Gao',
-            'Tombouctou',
-            'Kayes',
-            'Djenné',
+            'Bamako'
         ];
         foreach ($cities as $city) {
             City::firstOrCreate(['name' => $city]);

@@ -11,6 +11,12 @@ use Illuminate\Database\Seeder;
 
 class ListingSeeder extends Seeder
 {
+    private const BAMAKO_CENTER_LAT = 12.637788850276317;
+    private const BAMAKO_CENTER_LNG = -8.003584187426734;
+    // ~6-8km around city center
+    private const BAMAKO_LAT_OFFSET = 0.06;
+    private const BAMAKO_LNG_OFFSET = 0.08;
+
     private const TYPES = [
         Listing::TYPE_VILLA,
         Listing::TYPE_APARTMENT,
@@ -73,16 +79,24 @@ class ListingSeeder extends Seeder
                 'price' => fake()->numberBetween(50_000, 1_500_000),
                 'billing_period' => fake()->randomElement(BillingPeriod::cases())->value,
                 'publication_status' => fake()->randomElement([
-                    Listing::STATUS_DRAFT,
-                    Listing::STATUS_PENDING,
-                    Listing::STATUS_PAID,
+                    // Listing::STATUS_DRAFT,
+                    // Listing::STATUS_PENDING,
+                    // Listing::STATUS_PAID,
                     Listing::STATUS_PUBLISHED,
                 ]),
                 'bedrooms' => fake()->numberBetween(0, 5),
                 'bathrooms' => fake()->numberBetween(0, 3),
                 'surface_sqm' => fake()->optional(0.8)->numberBetween(25, 400),
-                'latitude' => fake()->optional(0.7)->latitude(12.5, 12.7),
-                'longitude' => fake()->optional(0.7)->longitude(-8.1, -7.9),
+                'latitude' => fake()->randomFloat(
+                    6,
+                    self::BAMAKO_CENTER_LAT - self::BAMAKO_LAT_OFFSET,
+                    self::BAMAKO_CENTER_LAT + self::BAMAKO_LAT_OFFSET
+                ),
+                'longitude' => fake()->randomFloat(
+                    6,
+                    self::BAMAKO_CENTER_LNG - self::BAMAKO_LNG_OFFSET,
+                    self::BAMAKO_CENTER_LNG + self::BAMAKO_LNG_OFFSET
+                ),
             ]);
 
             $this->attachMediaToListing($listing);
