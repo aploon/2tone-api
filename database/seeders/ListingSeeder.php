@@ -56,7 +56,7 @@ class ListingSeeder extends Seeder
         $this->ensureNeighborhoods();
 
         $neighborhoods = Neighborhood::all();
-        $owners = User::whereIn('role', [User::ROLE_OWNER, User::ROLE_ADMIN])->get();
+        $owners = User::where('role', User::ROLE_OWNER)->get();
 
         if ($neighborhoods->isEmpty() || $owners->isEmpty()) {
             return;
@@ -79,9 +79,8 @@ class ListingSeeder extends Seeder
                 'price' => fake()->numberBetween(50_000, 1_500_000),
                 'billing_period' => fake()->randomElement(BillingPeriod::cases())->value,
                 'publication_status' => fake()->randomElement([
-                    // Listing::STATUS_DRAFT,
-                    // Listing::STATUS_PENDING,
-                    // Listing::STATUS_PAID,
+                    Listing::STATUS_DRAFT,
+                    Listing::STATUS_PENDING,
                     Listing::STATUS_PUBLISHED,
                 ]),
                 'bedrooms' => fake()->numberBetween(0, 5),
@@ -140,7 +139,7 @@ class ListingSeeder extends Seeder
 
     private function ensureOwners(): void
     {
-        if (User::whereIn('role', [User::ROLE_OWNER, User::ROLE_ADMIN])->exists()) {
+        if (User::where('role', User::ROLE_OWNER)->exists()) {
             return;
         }
 
