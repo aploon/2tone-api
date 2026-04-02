@@ -59,12 +59,6 @@ class AdminListingController extends Controller
             return response()->json(['message' => 'Annonce introuvable'], 404);
         }
 
-        if (! in_array($listing->publication_status, [Listing::STATUS_PENDING, Listing::STATUS_PAID], true)) {
-            return response()->json([
-                'message' => 'Seules les annonces en attente de validation ou payées peuvent être modérées ainsi.',
-            ], 422);
-        }
-
         $listing->publication_status = $validated['publication_status'];
         $listing->save();
 
