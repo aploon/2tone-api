@@ -112,5 +112,69 @@ class ListingCorrectionRequestController extends Controller
 
         return response()->json($row->fresh(['listing', 'admin:id,name']), 201);
     }
+
+    /**
+     * Admin lists correction requests (open/done) with optional filters.
+     */
+    public function adminIndex(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->isAdmin()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $q = ListingCorrectionRequest::query()
+            ->with(['listing.neighborhood.city', 'listing.media', 'admin:id,name'])
+            ->orderBy('status', 'desc')
+            ->orderByDesc('created_at');
+
+        if ($request->filled('status')) {
+            $status = (string) $request->input('status');
+            if (in_array($status, [ListingCorrectionRequest::STATUS_OPEN, ListingCorrectionRequest::STATUS_DONE], true)) {
+                $q->where('status', $status);
+            }
+        }
+
+        $rows = $q->paginate($request->integer('per_page', 20));
+
+        return response()->json($rows);
+    }
+
+    /**
+     * Admin marks a correction request as done.
+     * Listing goes back to pending for re-review.
+     */
+    public function adminValidate(Request $request, int $id): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->isAdmin()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $row = ListingCorrectionRequest::with('listing')
+            ->find($id);
+
+        if (! $row) {
+            return response()->json(['message' => 'Correction request not found'], 404);
+        }
+
+        $row->status = ListingCorrectionRequest::STATUS_DONE;
+        $row->save();
+
+        if ($row->listing) {
+            $row->listing->publication_status = Listing::STATUS_PENDING;
+            $row->listing->save();
+        }
+
+        return response()->json([
+            'validated' => true,
+            'listing_id' => $row->listing_id,
+            'listing_status' => $row->listing?->publication_status,
+        ]);
+    }
 }
 
