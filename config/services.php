@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'twilio' => [
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        /** SID du service Verify (console Twilio → Verify → Service). */
+        'verify_service_sid' => env('TWILIO_VERIFY_SERVICE_SID'),
+        /** Si true : inscription propriétaire sans envoi SMS (dev uniquement). */
+        'verify_skip' => env('TWILIO_VERIFY_SKIP', false),
+    ],
+
 ];

@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/phone/send-otp', [AuthController::class, 'sendPhoneOtp']);
+    Route::post('/auth/phone/verify', [AuthController::class, 'verifyPhone']);
+});
+
 Route::get('/user', function (Request $request) {
     $user = $request->user();
 

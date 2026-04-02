@@ -34,6 +34,10 @@ class ListingPublicationPaymentController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant de payer.'], 403);
+        }
+
         $paid = $listing->hasCompletedPublicationPayment();
         $fee = (int) config('listing.publication_fee');
         $currency = (string) config('fedapay.currency_iso', 'XOF');
@@ -77,6 +81,10 @@ class ListingPublicationPaymentController extends Controller
         }
         if ((int) $listing->owner_id !== (int) $user->id && ! $user->isAdmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant de payer.'], 403);
         }
 
         if ($listing->hasCompletedPublicationPayment()) {
@@ -151,6 +159,10 @@ class ListingPublicationPaymentController extends Controller
         }
         if ((int) $listing->owner_id !== (int) $user->id && ! $user->isAdmin()) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant de payer.'], 403);
         }
 
         $paid = $listing->hasCompletedPublicationPayment();

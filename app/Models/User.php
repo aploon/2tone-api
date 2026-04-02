@@ -20,6 +20,7 @@ class User extends Authenticatable
 
     public const STATUS_ACTIVE = 'active';
     public const STATUS_SUSPENDED = 'suspended';
+    public const STATUS_PENDING_OTP = 'pending_otp';
 
     protected $fillable = [
         'name',

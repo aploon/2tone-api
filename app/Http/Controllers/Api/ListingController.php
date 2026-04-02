@@ -154,6 +154,10 @@ class ListingController extends Controller
             return response()->json(['message' => 'Seuls les propriétaires peuvent publier une annonce.'], 403);
         }
 
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant de publier une annonce.'], 403);
+        }
+
         if ($user->status === User::STATUS_SUSPENDED) {
             return response()->json(['message' => 'Compte suspendu : vous ne pouvez pas créer d’annonce.'], 403);
         }
@@ -236,6 +240,10 @@ class ListingController extends Controller
 
         if (!$user->isOwner()) {
             return response()->json(['message' => 'Seuls les propriétaires peuvent modifier une annonce.'], 403);
+        }
+
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant de modifier une annonce.'], 403);
         }
 
         if ($user->status === User::STATUS_SUSPENDED) {
@@ -356,6 +364,10 @@ class ListingController extends Controller
             return response()->json(['message' => 'Seuls les propriétaires peuvent supprimer une annonce.'], 403);
         }
 
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant de supprimer une annonce.'], 403);
+        }
+
         if ($user->status === User::STATUS_SUSPENDED) {
             return response()->json(['message' => 'Compte suspendu : vous ne pouvez pas supprimer d’annonce.'], 403);
         }
@@ -388,6 +400,10 @@ class ListingController extends Controller
 
         if (!$user->isOwner()) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant d’envoyer des médias.'], 403);
         }
 
         if ($user->status === User::STATUS_SUSPENDED) {
@@ -484,6 +500,10 @@ class ListingController extends Controller
 
         if (!$user->isOwner()) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant de gérer des médias.'], 403);
         }
 
         if ($user->status === User::STATUS_SUSPENDED) {

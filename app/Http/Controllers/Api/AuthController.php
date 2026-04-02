@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\TwilioVerifyService;
+use App\Support\PhoneE164;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -55,17 +58,63 @@ class AuthController extends Controller
         ]);
 
         $role = $validated['role'] ?? User::ROLE_TENANT;
-        $phone = isset($validated['telephone']) ? trim((string) $validated['telephone']) : '';
+        $phoneRaw = isset($validated['telephone']) ? trim((string) $validated['telephone']) : '';
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $role,
-            'status' => User::STATUS_ACTIVE,
-            'telephone' => $role === User::ROLE_OWNER ? $phone : null,
-            'whatsapp_number' => $role === User::ROLE_OWNER ? $phone : null,
-        ]);
+        if ($role === User::ROLE_TENANT) {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => $role,
+                'status' => User::STATUS_ACTIVE,
+                'telephone' => null,
+                'whatsapp_number' => null,
+            ]);
+        } else {
+            $phoneE164 = PhoneE164::normalize($phoneRaw);
+            if ($phoneE164 === null) {
+                return response()->json([
+                    'message' => 'Numéro de téléphone invalide.',
+                ], 422);
+            }
+
+            $verifySkip = filter_var(config('services.twilio.verify_skip'), FILTER_VALIDATE_BOOLEAN);
+            $verify = app(TwilioVerifyService::class);
+
+            if (! $verifySkip && ! $verify->isConfigured()) {
+                return response()->json([
+                    'message' => 'Vérification SMS indisponible (configuration Twilio manquante).',
+                ], 503);
+            }
+
+            $status = $verifySkip ? User::STATUS_ACTIVE : User::STATUS_PENDING_OTP;
+
+            try {
+                $user = DB::transaction(function () use ($validated, $role, $phoneE164, $status, $verifySkip, $verify) {
+                    $user = User::create([
+                        'name' => $validated['name'],
+                        'email' => $validated['email'],
+                        'password' => Hash::make($validated['password']),
+                        'role' => $role,
+                        'status' => $status,
+                        'telephone' => $phoneE164,
+                        'whatsapp_number' => $phoneE164,
+                    ]);
+
+                    if (! $verifySkip) {
+                        $verify->sendVerification($phoneE164);
+                    }
+
+                    return $user;
+                });
+            } catch (\Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'message' => 'Impossible d’envoyer le SMS de vérification. Réessayez dans quelques instants.',
+                ], 502);
+            }
+        }
 
         $token = $user->createToken('mobile')->plainTextToken;
 
@@ -74,6 +123,86 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user' => $this->formatUser($user),
         ], 201);
+    }
+
+    /**
+     * Renvoie un code SMS (propriétaire en attente de vérification).
+     */
+    public function sendPhoneOtp(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user->role !== User::ROLE_OWNER || $user->status !== User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Aucune vérification en attente.'], 422);
+        }
+
+        $phone = $user->telephone;
+        if ($phone === null || $phone === '') {
+            return response()->json(['message' => 'Numéro de téléphone manquant.'], 422);
+        }
+
+        $verify = app(TwilioVerifyService::class);
+        if (! $verify->isConfigured()) {
+            return response()->json(['message' => 'Vérification SMS indisponible.'], 503);
+        }
+
+        try {
+            $verify->sendVerification($phone);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'Impossible d’envoyer le SMS. Réessayez plus tard.'], 502);
+        }
+
+        return response()->json(['message' => 'SMS envoyé.']);
+    }
+
+    /**
+     * Valide le code Twilio Verify et active le compte propriétaire.
+     */
+    public function verifyPhone(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string', 'min:4', 'max:10'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user->role !== User::ROLE_OWNER || $user->status !== User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Aucune vérification en attente.'], 422);
+        }
+
+        $phone = $user->telephone;
+        if ($phone === null || $phone === '') {
+            return response()->json(['message' => 'Numéro de téléphone manquant.'], 422);
+        }
+
+        $verify = app(TwilioVerifyService::class);
+        if (! $verify->isConfigured()) {
+            return response()->json(['message' => 'Vérification SMS indisponible.'], 503);
+        }
+
+        try {
+            $ok = $verify->checkVerification($phone, $data['code']);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'Vérification impossible. Réessayez.'], 502);
+        }
+
+        if (! $ok) {
+            return response()->json(['message' => 'Code incorrect ou expiré.'], 422);
+        }
+
+        $user->status = User::STATUS_ACTIVE;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Numéro confirmé.',
+            'user' => $this->formatUser($user->fresh()),
+        ]);
     }
 
     public function updateProfile(Request $request): JsonResponse
