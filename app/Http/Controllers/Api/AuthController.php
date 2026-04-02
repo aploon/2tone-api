@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -78,6 +79,19 @@ class AuthController extends Controller
                 ], 422);
             }
 
+            $phoneAlreadyUsed = User::query()
+                ->where(function ($q) use ($phoneE164): void {
+                    $q->where('telephone', $phoneE164)
+                        ->orWhere('whatsapp_number', $phoneE164);
+                })
+                ->exists();
+
+            if ($phoneAlreadyUsed) {
+                return response()->json([
+                    'message' => 'Ce numéro de téléphone est déjà associé à un compte.',
+                ], 422);
+            }
+
             $verifySkip = filter_var(config('services.twilio.verify_skip'), FILTER_VALIDATE_BOOLEAN);
             $verify = app(TwilioVerifyService::class);
 
@@ -101,7 +115,7 @@ class AuthController extends Controller
                         'whatsapp_number' => $phoneE164,
                     ]);
 
-                    if (! $verifySkip) {
+                    if (!$verifySkip) {
                         $verify->sendVerification($phoneE164);
                     }
 
@@ -109,9 +123,15 @@ class AuthController extends Controller
                 });
             } catch (\Throwable $e) {
                 report($e);
+                Log::error('Erreur lors de l\'envoi du SMS de vérification Twilio', [
+                    'exception' => $e,
+                    'user_email' => $validated['email'] ?? null,
+                    'role' => $role ?? null,
+                    'phone' => $phoneE164 ?? null,
+                ]);
 
                 return response()->json([
-                    'message' => 'Impossible d’envoyer le SMS de vérification. Réessayez dans quelques instants.',
+                    'message' => 'Impossible d’envoyer le SMS de vérification. Vérifiez votre numéro de téléphone et réessayez.',
                 ], 502);
             }
         }
