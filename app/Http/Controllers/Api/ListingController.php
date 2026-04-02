@@ -239,6 +239,10 @@ class ListingController extends Controller
             return response()->json(['message' => 'Seuls les propriétaires peuvent modifier une annonce.'], 403);
         }
 
+        if ($user->status === User::STATUS_SUSPENDED) {
+            return response()->json(['message' => 'Compte suspendu : vous ne pouvez pas modifier d’annonce.'], 403);
+        }
+
         $listing = Listing::with('media')->find($id);
         if (!$listing) {
             return response()->json(['message' => 'Listing not found'], 404);
@@ -353,6 +357,10 @@ class ListingController extends Controller
             return response()->json(['message' => 'Seuls les propriétaires peuvent supprimer une annonce.'], 403);
         }
 
+        if ($user->status === User::STATUS_SUSPENDED) {
+            return response()->json(['message' => 'Compte suspendu : vous ne pouvez pas supprimer d’annonce.'], 403);
+        }
+
         $listing = Listing::find($id);
         if (!$listing) {
             return response()->json(['message' => 'Listing not found'], 404);
@@ -381,6 +389,10 @@ class ListingController extends Controller
 
         if (!$user->isOwner()) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($user->status === User::STATUS_SUSPENDED) {
+            return response()->json(['message' => 'Compte suspendu : vous ne pouvez pas uploader de média.'], 403);
         }
 
         $request->validate([
@@ -473,6 +485,10 @@ class ListingController extends Controller
 
         if (!$user->isOwner()) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($user->status === User::STATUS_SUSPENDED) {
+            return response()->json(['message' => 'Compte suspendu : vous ne pouvez pas supprimer de média.'], 403);
         }
 
         $data = $request->validate([
