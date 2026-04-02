@@ -50,7 +50,7 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Update role / status for an existing user.
+     * Update status for an existing user.
      */
     public function update(Request $request, int $id): JsonResponse
     {
@@ -65,14 +65,15 @@ class AdminUserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
+        // Par design : on ne peut jamais suspendre/réactiver un admin.
+        if ($row->isAdmin() && $request->filled('status')) {
+            return response()->json(['message' => 'Impossible de modifier le status d\'un admin'], 422);
+        }
+
         $data = $request->validate([
-            'role' => ['sometimes', 'string', Rule::in([User::ROLE_TENANT, User::ROLE_OWNER, User::ROLE_ADMIN])],
             'status' => ['sometimes', 'string', Rule::in([User::STATUS_ACTIVE, User::STATUS_SUSPENDED])],
         ]);
 
-        if (array_key_exists('role', $data)) {
-            $row->role = $data['role'];
-        }
         if (array_key_exists('status', $data)) {
             $row->status = $data['status'];
         }

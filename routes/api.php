@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminListingController;
+use App\Http\Controllers\Api\AdminContactController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CityController;
@@ -70,4 +71,10 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/admin/listing-corrections/{id}/validate', [ListingCorrectionRequestController::class, 'adminValidate']);
     Route::get('/admin/users', [AdminUserController::class, 'index']);
     Route::patch('/admin/users/{id}', [AdminUserController::class, 'update']);
+});
+
+// Contact admin (used by suspended users on mobile profile).
+// Requires auth but does not require admin role.
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/admin/contact', [AdminContactController::class, 'index']);
 });
