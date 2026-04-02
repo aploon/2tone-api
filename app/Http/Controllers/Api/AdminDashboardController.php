@@ -21,6 +21,7 @@ class AdminDashboardController extends Controller
             ->pluck('c', 'role');
 
         $listingsByStatus = Listing::query()
+            ->where('publication_status', '!=', Listing::STATUS_DRAFT)
             ->selectRaw('publication_status, count(*) as c')
             ->groupBy('publication_status')
             ->pluck('c', 'publication_status');
@@ -35,7 +36,7 @@ class AdminDashboardController extends Controller
                 'by_role' => $usersByRole,
             ],
             'listings' => [
-                'total' => Listing::query()->count(),
+                'total' => Listing::query()->where('publication_status', '!=', Listing::STATUS_DRAFT)->count(),
                 'by_status' => $listingsByStatus,
             ],
             'corrections_open' => $correctionsOpen,

@@ -20,7 +20,8 @@ class AdminListingController extends Controller
                 'neighborhood.city',
                 'media',
                 'owner:id,name,email,telephone,whatsapp_number',
-            ]);
+            ])
+            ->where('publication_status', '!=', Listing::STATUS_DRAFT);
 
         if ($request->filled('publication_status')) {
             $statuses = array_values(array_filter(array_map('trim', explode(',', (string) $request->publication_status))));
