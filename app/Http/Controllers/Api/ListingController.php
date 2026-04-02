@@ -155,6 +155,10 @@ class ListingController extends Controller
             return response()->json(['message' => 'Seuls les propriétaires peuvent publier une annonce.'], 403);
         }
 
+        if ($user->status === User::STATUS_SUSPENDED) {
+            return response()->json(['message' => 'Compte suspendu : vous ne pouvez pas créer d’annonce.'], 403);
+        }
+
         $data = $request->validated();
         unset($data['save_as']);
 
