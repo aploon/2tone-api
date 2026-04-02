@@ -110,6 +110,7 @@ class AuthController extends Controller
             'email' => $user->email,
             'name' => $user->name,
             'role' => $user->role,
+            'status' => $user->status,
             'telephone' => $user->telephone,
             'whatsapp_number' => $user->whatsapp_number,
         ];
