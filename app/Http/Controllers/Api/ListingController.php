@@ -126,8 +126,7 @@ class ListingController extends Controller
             return response()->json(['message' => 'Listing not found'], 404);
         }
 
-        $isVisible = $listing->publication_status === Listing::STATUS_PAID
-            || $listing->publication_status === Listing::STATUS_PUBLISHED;
+        $isVisible = $listing->publication_status === Listing::STATUS_PUBLISHED;
         $isOwner = $user && (int) $listing->owner_id === (int) $user->id;
         $isAdmin = $user && $user->isAdmin();
 
@@ -144,7 +143,7 @@ class ListingController extends Controller
     }
 
     /**
-     * Création d’une annonce en brouillon uniquement. La soumission pour validation (pending) passe par PUT après paiement FedaPay.
+     * Création d’une annonce en brouillon uniquement. La soumission pour validation (pending) passe par PUT après paiement FedaPay (statut annonce = pending, pas de statut « paid »).
      */
     public function store(StoreListingRequest $request): JsonResponse
     {

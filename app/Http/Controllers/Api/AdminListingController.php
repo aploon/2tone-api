@@ -43,7 +43,7 @@ class AdminListingController extends Controller
     }
 
     /**
-     * Modération : publier ou rejeter une annonce en attente (ou payée, en attente de validation).
+     * Modération : publier ou rejeter une annonce en attente de validation.
      */
     public function updatePublicationStatus(Request $request, int $id): JsonResponse
     {

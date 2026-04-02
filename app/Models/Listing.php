@@ -30,8 +30,6 @@ class Listing extends Model
 
     public const STATUS_PENDING = 'pending';
 
-    public const STATUS_PAID = 'paid';
-
     public const STATUS_PUBLISHED = 'published';
 
     public const STATUS_REJECTED = 'rejected';
@@ -127,7 +125,7 @@ class Listing extends Model
 
     public function scopeVisible($query)
     {
-        return $query->whereIn('publication_status', [self::STATUS_PAID, self::STATUS_PUBLISHED]);
+        return $query->where('publication_status', self::STATUS_PUBLISHED);
     }
 
     public function hasVideo3d(): bool
