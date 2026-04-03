@@ -46,11 +46,41 @@ class StoreListingRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $media = $this->input('media', []);
+            if (! is_array($media)) {
+                return;
+            }
+
+            $primaryCount = 0;
             $galleryImageCount = 0;
+            $video3dCount = 0;
+
             foreach ($media as $item) {
-                if (($item['type'] ?? null) === Media::TYPE_IMAGE && !((bool) ($item['is_primary'] ?? false))) {
-                    $galleryImageCount++;
+                $type = $item['type'] ?? null;
+                $isPrimary = (bool) ($item['is_primary'] ?? false);
+
+                if ($type === Media::TYPE_IMAGE) {
+                    if ($isPrimary) {
+                        $primaryCount++;
+                    } else {
+                        $galleryImageCount++;
+                    }
                 }
+                if (in_array($type, [Media::TYPE_VIDEO_3D, Media::TYPE_MODEL_3D], true)) {
+                    $video3dCount++;
+                }
+            }
+
+            if ($primaryCount < 1) {
+                $validator->errors()->add('media', 'Une image de couverture est obligatoire.');
+            }
+            if ($galleryImageCount < Listing::MIN_GALLERY_IMAGES_PER_LISTING) {
+                $validator->errors()->add(
+                    'media',
+                    'Au moins '.Listing::MIN_GALLERY_IMAGES_PER_LISTING.' photos en galerie (hors couverture) sont obligatoires.',
+                );
+            }
+            if ($video3dCount < 1) {
+                $validator->errors()->add('media', 'Une visite 3D ou vidéo est obligatoire.');
             }
             if ($galleryImageCount > Listing::MAX_IMAGES_PER_LISTING) {
                 $validator->errors()->add(

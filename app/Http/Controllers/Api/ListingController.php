@@ -168,34 +168,6 @@ class ListingController extends Controller
         $mediaItems = $data['media'] ?? [];
         unset($data['media']);
 
-        $galleryImageCount = collect($mediaItems)
-            ->filter(function (array $item): bool {
-                return ($item['type'] ?? null) === Media::TYPE_IMAGE
-                    && !((bool) ($item['is_primary'] ?? false));
-            })
-            ->count();
-        if ($galleryImageCount > Listing::MAX_IMAGES_PER_LISTING) {
-            return response()->json([
-                'message' => 'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos en galerie (hors couverture).',
-            ], 422);
-        }
-
-        $hasPrimaryImage = false;
-        foreach ($mediaItems as $item) {
-            $isPrimary = (bool) ($item['is_primary'] ?? false);
-            $isImage = ($item['type'] ?? null) === Media::TYPE_IMAGE;
-            if ($isPrimary && $isImage) {
-                $hasPrimaryImage = true;
-                break;
-            }
-        }
-
-        if (!$hasPrimaryImage) {
-            return response()->json([
-                'message' => 'Une image de couverture est obligatoire (is_primary=true).',
-            ], 422);
-        }
-
         $listing = DB::transaction(function () use ($user, $data, $mediaItems) {
             $listing = Listing::create([
                 'owner_id' => $user->id,
@@ -294,6 +266,23 @@ class ListingController extends Controller
         if ($galleryImageCount > Listing::MAX_IMAGES_PER_LISTING) {
             return response()->json([
                 'message' => 'Maximum '.Listing::MAX_IMAGES_PER_LISTING.' photos en galerie (hors couverture).',
+            ], 422);
+        }
+
+        if ($galleryImageCount < Listing::MIN_GALLERY_IMAGES_PER_LISTING) {
+            return response()->json([
+                'message' => 'Au moins '.Listing::MIN_GALLERY_IMAGES_PER_LISTING.' photos en galerie (hors couverture) sont obligatoires.',
+            ], 422);
+        }
+
+        $video3dCount = collect($mediaItems)
+            ->filter(function (array $item): bool {
+                return in_array($item['type'] ?? null, [Media::TYPE_VIDEO_3D, Media::TYPE_MODEL_3D], true);
+            })
+            ->count();
+        if ($video3dCount < 1) {
+            return response()->json([
+                'message' => 'Une visite 3D ou vidéo est obligatoire.',
             ], 422);
         }
 

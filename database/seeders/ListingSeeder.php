@@ -38,11 +38,11 @@ class ListingSeeder extends Seeder
         'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?w=800',
     ];
 
-    /** Sample 3D resources used by the mobile viewer tests. */
+    /** Sample 3D resources (types acceptés par l’API : video_3d / model_3d). */
     private const SAMPLE_3D_RESOURCES = [
         [
-            'type' => Media::TYPE_PANORAMA_3D,
-            'url' => 'https://raw.githubusercontent.com/aploon/aploon/main/assets/1.jpg',
+            'type' => Media::TYPE_VIDEO_3D,
+            'url' => 'https://example.com/sample-tour.mp4',
         ],
         [
             'type' => Media::TYPE_MODEL_3D,
@@ -106,7 +106,11 @@ class ListingSeeder extends Seeder
 
     private function attachMediaToListing(Listing $listing): void
     {
-        $imageUrls = fake()->randomElements(self::SAMPLE_IMAGES, fake()->numberBetween(2, 5));
+        // 1 couverture + au moins 3 photos galerie (aligné Listing::MIN_GALLERY_IMAGES_PER_LISTING).
+        $imageUrls = fake()->randomElements(
+            self::SAMPLE_IMAGES,
+            fake()->numberBetween(4, min(8, count(self::SAMPLE_IMAGES)))
+        );
         $sortOrder = 0;
         $captions = [
             ['Façade principale', 'Vue sur la rue avec jardin.'],

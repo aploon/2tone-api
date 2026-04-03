@@ -39,6 +39,9 @@ class Listing extends Model
     /** Nombre maximum de photos en galerie (hors image de couverture `is_primary`). */
     public const MAX_IMAGES_PER_LISTING = 8;
 
+    /** Nombre minimum de photos en galerie (hors couverture). */
+    public const MIN_GALLERY_IMAGES_PER_LISTING = 3;
+
     protected $fillable = [
         'owner_id',
         'neighborhood_id',
