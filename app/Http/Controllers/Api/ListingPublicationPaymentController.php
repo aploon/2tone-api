@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Listing;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\Payments\PublicationPaymentGatewayRegistry;
 use Illuminate\Http\JsonResponse;
@@ -40,7 +41,7 @@ class ListingPublicationPaymentController extends Controller
 
         $paid = $listing->hasCompletedPublicationPayment();
         $fee = (int) config('listing.publication_fee');
-        $currency = (string) config('fedapay.currency_iso', 'XOF');
+        $currency = (string) config('cinetpay.currency', config('fedapay.currency_iso', 'XOF'));
 
         $methods = [];
         foreach ($this->gatewayRegistry->all() as $gateway) {
@@ -91,9 +92,11 @@ class ListingPublicationPaymentController extends Controller
             return response()->json([
                 'already_paid' => true,
                 'payment_url' => null,
+                'client_initiated' => false,
+                'cinetpay' => null,
                 'gateway' => $data['gateway'],
                 'publication_fee' => (int) config('listing.publication_fee'),
-                'currency' => config('fedapay.currency_iso'),
+                'currency' => config('cinetpay.currency', config('fedapay.currency_iso', 'XOF')),
             ]);
         }
 
@@ -124,12 +127,59 @@ class ListingPublicationPaymentController extends Controller
         return response()->json([
             'already_paid' => false,
             'payment_url' => $result->paymentUrl,
+            'client_initiated' => $result->clientInitiated,
+            'cinetpay' => $result->cinetpay,
             'gateway' => $gateway->getId(),
             'publication_fee' => $result->publicationFee,
             'currency' => $result->currency,
             'merchant_reference' => $result->merchantReference,
             'return_to' => $result->returnTo,
         ]);
+    }
+
+    /**
+     * Après initialisation CinetPay côté app : enregistre notify_token / transaction_id pour le webhook.
+     */
+    public function cinetpayAck(Request $request, int $listingId): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $data = $request->validate([
+            'merchant_reference' => ['required', 'string', 'max:100'],
+            'notify_token' => ['required', 'string'],
+            'transaction_id' => ['required', 'string', 'max:120'],
+        ]);
+
+        $listing = Listing::query()->find($listingId);
+        if (! $listing) {
+            return response()->json(['message' => 'Annonce introuvable.'], 404);
+        }
+        if ((int) $listing->owner_id !== (int) $user->id && ! $user->isAdmin()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($user->status === User::STATUS_PENDING_OTP) {
+            return response()->json(['message' => 'Confirmez votre numéro de téléphone avant de payer.'], 403);
+        }
+
+        $payment = Payment::query()
+            ->where('listing_id', $listing->id)
+            ->where('reference', $data['merchant_reference'])
+            ->where('method', 'cinetpay')
+            ->where('status', Payment::STATUS_PENDING)
+            ->first();
+
+        if (! $payment) {
+            return response()->json(['message' => 'Paiement introuvable ou déjà traité.'], 404);
+        }
+
+        $payment->update([
+            'cinetpay_notify_token' => $data['notify_token'],
+            'cinetpay_transaction_id' => $data['transaction_id'],
+        ]);
+
+        return response()->json(['ok' => true]);
     }
 
     /**
@@ -170,7 +220,7 @@ class ListingPublicationPaymentController extends Controller
         return response()->json([
             'paid' => $paid,
             'publication_fee' => (int) config('listing.publication_fee'),
-            'currency' => config('fedapay.currency_iso'),
+            'currency' => config('cinetpay.currency', config('fedapay.currency_iso', 'XOF')),
         ]);
     }
 }

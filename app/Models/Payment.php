@@ -15,7 +15,17 @@ class Payment extends Model
 
     public const STATUS_REFUNDED = 'refunded';
 
-    protected $fillable = ['listing_id', 'fedapay_transaction_id', 'amount', 'status', 'method', 'reference', 'paid_at'];
+    protected $fillable = [
+        'listing_id',
+        'fedapay_transaction_id',
+        'cinetpay_notify_token',
+        'cinetpay_transaction_id',
+        'amount',
+        'status',
+        'method',
+        'reference',
+        'paid_at',
+    ];
 
     protected function casts(): array
     {

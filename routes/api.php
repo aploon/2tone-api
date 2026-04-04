@@ -1,10 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\AdminContactController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminListingController;
-use App\Http\Controllers\Api\AdminContactController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CinetPayPublicationWebhookController;
 use App\Http\Controllers\Api\CityController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\GeocodingController;
@@ -51,10 +52,13 @@ Route::get('/geocode/search', [GeocodingController::class, 'searchSuggestions'])
 
 Route::get('/payments/callback/{gateway}', [ListingPublicationPaymentController::class, 'callback']);
 
+Route::post('/webhooks/cinetpay/publication', [CinetPayPublicationWebhookController::class, 'publication']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/listings', [ListingController::class, 'store']);
     Route::get('/listings/{id}/payment/methods', [ListingPublicationPaymentController::class, 'methods']);
     Route::post('/listings/{id}/payment/initiate', [ListingPublicationPaymentController::class, 'initiate']);
+    Route::post('/listings/{id}/payment/cinetpay/ack', [ListingPublicationPaymentController::class, 'cinetpayAck']);
     Route::get('/listings/{id}/payment/status', [ListingPublicationPaymentController::class, 'status']);
     Route::put('/listings/{id}', [ListingController::class, 'update']);
     Route::delete('/listings/{id}', [ListingController::class, 'destroy']);

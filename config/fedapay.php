@@ -8,5 +8,5 @@ return [
      * URL de base pour le callback HTTP (sans /api/...). Par défaut APP_URL.
      * Doit être joignable publiquement par FedaPay (ex. ngrok en dev).
      */
-    'callback_base_url' => env('FEDAPAY_CALLBACK_BASE_URL', env('APP_URL', 'http://localhost')),
+    'callback_base_url' => env('APP_URL', 'http://localhost:8000'),
 ];

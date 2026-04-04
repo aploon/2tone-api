@@ -117,6 +117,8 @@ class FedaPayPublicationGateway implements PublicationPaymentGatewayInterface
             currency: (string) config('fedapay.currency_iso', 'XOF'),
             merchantReference: $merchantReference,
             returnTo: $returnTo,
+            clientInitiated: false,
+            cinetpay: null,
         );
     }
 
